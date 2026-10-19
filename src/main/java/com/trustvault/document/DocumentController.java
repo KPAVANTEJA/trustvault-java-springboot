@@ -237,6 +237,8 @@ public ResponseEntity<Resource> downloadDocument(
 
     return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType(contentType))
+            .header(HttpHeaders.CACHE_CONTROL, "no-store")
+            .header("X-Content-Type-Options", "nosniff")
             .header(
                     HttpHeaders.CONTENT_DISPOSITION,
                     "attachment; filename=\"document-" + document.getId() + "\"")
