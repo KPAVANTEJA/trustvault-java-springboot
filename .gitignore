@@ -1,0 +1,61 @@
+
+# Spring Initializr help file
+HELP.md
+
+# Maven build output
+target/
+build/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Maven Wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# Eclipse and Spring Tool Suite
+.classpath
+.project
+.settings/
+.apt_generated/
+.factorypath
+.springBeans
+.sts4-cache/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+application-local.properties
+
+# Java logs
+*.log
+
+# Database exports and backups
+*.sql.bak
+*.dmp
+
+# Keystores and private keys
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+
+# Operating system files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustVault | Secure Document Access</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/app.js" defer></script>
+</head>
+<body>
+    <header class="navbar">
+        <a class="brand" href="/">
+            <span class="brand-icon">T</span>
+            TrustVault
+        </a>
+        <nav>
+            <a href="#security">Security</a>
+            <a href="#workflow">How it works</a>
+            <a class="login-link" href="/login">Sign in</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <p class="eyebrow">DOCUMENT SECURITY. ACCOUNTABLE ACCESS.</p>
+                <h1>Share the document.<br><span>Not the whole vault.</span></h1>
+                <p class="hero-description">
+                    Give the right people access to the right documents.
+                    Revoke access when needed. Keep an auditable record
+                    of what happened.
+                </p>
+                <div class="hero-actions">
+                    <a class="primary-button" href="/login">Access TrustVault</a>
+                    <a class="secondary-button" href="#security">Explore security ↓</a>
+                </div>
+                <p class="hero-note">Access is controlled by the server, not by the interface.</p>
+            </div>
+
+            <div class="preview-card">
+                <div class="preview-heading">
+                    <div>
+                        <p class="muted-label">WORKSPACE PREVIEW</p>
+                        <h2>Document overview</h2>
+                    </div>
+                    <span class="status-pill">Illustrative UI</span>
+                </div>
+
+                <div class="document-row">
+                    <span class="file-icon">PDF</span>
+                    <div class="file-info">
+                        <strong>Client Agreement</strong>
+                        <span>Legal · Sample document</span>
+                    </div>
+                    <span class="file-status">Private</span>
+                </div>
+
+                <div class="document-row">
+                    <span class="file-icon">PDF</span>
+                    <div class="file-info">
+                        <strong>Audit Summary</strong>
+                        <span>Compliance · Sample document</span>
+                    </div>
+                    <span class="file-status">Private</span>
+                </div>
+
+                <div class="document-row">
+                    <span class="file-icon">DOC</span>
+                    <div class="file-info">
+                        <strong>Design Specification</strong>
+                        <span>Engineering · Sample document</span>
+                    </div>
+                    <span class="file-status">Private</span>
+                </div>
+
+                <div class="preview-footer">
+                    <span class="status-dot"></span>
+                    Security controls will be enforced by the backend
+                </div>
+            </div>
+        </section>
+
+        <section id="security" class="security-section">
+            <p class="eyebrow">BUILT AROUND TRUST</p>
+            <h2>Security is more than a lock icon.</h2>
+
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <span class="feature-number">01</span>
+                    <h3>Precise permissions</h3>
+                    <p>Grant named people read or edit access to individual documents.</p>
+                </article>
+
+                <article class="feature-card">
+                    <span class="feature-number">02</span>
+                    <h3>Immediate revocation</h3>
+                    <p>Check current permissions on every protected document request.</p>
+                </article>
+
+                <article class="feature-card">
+                    <span class="feature-number">03</span>
+                    <h3>Verifiable activity</h3>
+                    <p>Record document actions and refused access attempts for investigation.</p>
+                </article>
+            </div>
+        </section>
+
+        <section id="workflow" class="workflow-section">
+            <p class="eyebrow">THE TRUSTVAULT APPROACH</p>
+            <h2>Every request must earn access.</h2>
+            <p>
+                Authenticate the user, verify permission for the specific document,
+                check whether access is still valid, and record the outcome.
+            </p>
+        </section>
+    </main>
+
+    <footer>
+        <a class="brand" href="/">
+            <span class="brand-icon">T</span>
+            TrustVault
+        </a>
+        <p>Secure document sharing with a real audit trail.</p>
+    </footer>
+</body>
+</html>
