@@ -29,7 +29,7 @@ public class DocumentPermissionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public Map<String, Object> grantPermission(
             @PathVariable Long documentId,
             @RequestBody GrantPermissionRequest request,
@@ -57,7 +57,7 @@ public class DocumentPermissionController {
     }
 
     @DeleteMapping("/{recipientId}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public Map<String, String> revokePermission(
             @PathVariable Long documentId,
             @PathVariable Long recipientId,
