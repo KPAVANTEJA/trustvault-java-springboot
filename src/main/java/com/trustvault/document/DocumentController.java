@@ -1,7 +1,7 @@
 package com.trustvault.document;
 
 import java.io.IOException;
-
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -299,6 +299,30 @@ public ResponseEntity<Void> deleteDocument(
     auditLogService.recordDeletion(document, user);
 
     return ResponseEntity.noContent().build();
+}
+
+
+@GetMapping("/search")
+public List<Map<String, Object>> searchDocuments(
+        @RequestParam(defaultValue = "") String keyword,
+        Authentication authentication) {
+
+    AppUser user = userRepository.findByEmailIgnoreCase(
+            authentication.getName()
+    ).orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.UNAUTHORIZED, "User not found"));
+
+    return documentRepository.searchAccessibleDocuments(
+            user.getId(), keyword.trim()
+    ).stream().map(document -> {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("id", document.getId());
+        result.put("title", document.getTitle());
+        result.put("filename", document.getOriginalFilename());
+        result.put("sizeBytes", document.getSizeBytes());
+        result.put("createdAt", document.getCreatedAt());
+        return result;
+    }).toList();
 }
 
 

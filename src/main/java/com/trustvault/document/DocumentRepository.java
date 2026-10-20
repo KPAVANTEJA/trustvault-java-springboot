@@ -32,4 +32,21 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     	List<Document> findOwnedOrSharedDocuments(
     	    @Param("userId") Long userId
     	);
+    
+    @Query("""
+    	    SELECT DISTINCT d
+    	    FROM Document d
+    	    LEFT JOIN DocumentPermission p ON p.document = d
+    	    WHERE d.deleted = false
+    	      AND (
+    	          d.owner.id = :userId
+    	          OR p.user.id = :userId
+    	      )
+    	      AND LOWER(d.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    	    ORDER BY d.createdAt DESC
+    	    """)
+    	List<Document> searchAccessibleDocuments(
+    	    @Param("userId") Long userId,
+    	    @Param("keyword") String keyword
+    	);
 }
