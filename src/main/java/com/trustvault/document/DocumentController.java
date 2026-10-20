@@ -181,7 +181,7 @@ public class DocumentController {
                 HttpStatus.UNAUTHORIZED, "Authenticated user not found."));
 
         return documentRepository
-            .findByOwner_IdOrderByCreatedAtDesc(user.getId())
+        		.findOwnedOrSharedDocuments(user.getId())
             .stream()
             .map(document -> Map.<String, Object>of(
                 "id", document.getId(),
@@ -214,17 +214,22 @@ public ResponseEntity<Resource> downloadDocument(
     boolean isOwner = document.getOwner().getId().equals(user.getId());
 
     if (!isOwner) {
-        DocumentPermission permission = permissionRepository
-                .findByDocument_IdAndUser_Id(id, user.getId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Document not found."));
+    	DocumentPermission permission = permissionRepository
+    	        .findByDocument_IdAndUser_Id(id, user.getId())
+    	        .orElse(null);
 
-        if (permission.getPermissionType() != PermissionType.VIEW
-                && permission.getPermissionType() != PermissionType.EDIT) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, "Document not found.");
-        }
+    	if (permission == null) {
+    	    auditLogService.recordDownloadFailure(document, user, "DENIED");
+    	    throw new ResponseStatusException(
+    	            HttpStatus.NOT_FOUND, "Document not found.");
+    	}
+
+    	if (permission.getPermissionType() != PermissionType.VIEW
+    	        && permission.getPermissionType() != PermissionType.EDIT) {
+    	    auditLogService.recordDownloadFailure(document, user, "DENIED");
+    	    throw new ResponseStatusException(
+    	            HttpStatus.NOT_FOUND, "Document not found.");
+    	}
     }
 
     Path filePath = storageService.resolve(document.getStorageKey());
@@ -241,6 +246,8 @@ public ResponseEntity<Resource> downloadDocument(
             : document.getContentType();
 
     auditLogService.recordDownload(document, user);
+    
+    
     
     return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType(contentType))

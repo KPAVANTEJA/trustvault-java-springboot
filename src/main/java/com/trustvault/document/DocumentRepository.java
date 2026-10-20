@@ -1,9 +1,12 @@
 package com.trustvault.document;
 
 import java.util.List;
+
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface DocumentRepository extends JpaRepository<Document, Long> {
 
@@ -12,4 +15,16 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     Optional<Document> findByIdAndOwner_Id(Long id, Long ownerId);
 
     boolean existsByStorageKey(String storageKey);
+    
+    @Query("""
+    	    SELECT DISTINCT d
+    	    FROM Document d
+    	    LEFT JOIN DocumentPermission p ON p.document = d
+    	    WHERE d.owner.id = :userId
+    	       OR p.user.id = :userId
+    	    ORDER BY d.createdAt DESC
+    	    """)
+    	List<Document> findOwnedOrSharedDocuments(
+    	    @Param("userId") Long userId
+    	);
 }
