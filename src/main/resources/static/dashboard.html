@@ -68,6 +68,15 @@
             margin: 12px 0;
             padding: 12px;
         }
+        #document-list {
+    min-height: 120px;
+    align-content: start;
+}
+
+.dashboard-panel {
+    overflow: hidden;
+}
+        
     </style>
 </head>
 <body>
@@ -110,13 +119,26 @@
             <p id="upload-message" class="message" role="status"></p>
         </section>
 
-        <section class="dashboard-panel">
-            <h2>Your documents</h2>
-            <div id="document-list" class="document-list">
-                <p class="muted">Loading documents...</p>
-            </div>
-            <p id="list-message" class="message" role="status"></p>
-        </section>
+        
+<section class="dashboard-panel">
+    <h2>Your documents</h2>
+
+    <label for="document-search">Search by document title</label>
+    <input
+        class="dashboard-input"
+        id="document-search"
+        type="search"
+        placeholder="Enter a document title..."
+        maxlength="200"
+    >
+
+    <div id="document-list" class="document-list">
+        <p class="muted">Loading documents...</p>
+    </div>
+
+    <p id="list-message" class="message" role="status"></p>
+</section>
+
     </main>
 
     <script src="/js/dashboard.js" defer></script>
