@@ -264,12 +264,131 @@ async function loadDocuments(keyword = "") {
 				    shareButton
 				);
 
-				item.appendChild(shareSection);
-				documentList.appendChild(item);
-
 				
 
+				item.appendChild(shareSection);
 
+				// List shared users and provide a revoke button.
+				const permissionsSection = document.createElement("div");
+				permissionsSection.style.marginTop = "16px";
+
+				const permissionsHeading = document.createElement("h3");
+				permissionsHeading.textContent = "Shared with";
+
+				const permissionsList = document.createElement("div");
+				permissionsList.className = "muted";
+				permissionsList.textContent = "Loading permissions...";
+
+				permissionsSection.append(permissionsHeading, permissionsList);
+				item.appendChild(permissionsSection);
+
+				async function loadPermissions() {
+				    permissionsList.replaceChildren();
+
+				    try {
+				        const response = await fetch(
+				            `/api/documents/${encodeURIComponent(documentData.id)}/permissions`,
+				            {
+				                credentials: "same-origin",
+				                headers: { "Accept": "application/json" }
+				            }
+				        );
+
+				        if (!response.ok) {
+				            permissionsList.textContent =
+				                response.status === 403 || response.status === 404
+				                    ? "Permission details unavailable."
+				                    : "Could not load shared users.";
+				            return;
+				        }
+
+				        const permissions = await response.json();
+
+				        if (!Array.isArray(permissions) || permissions.length === 0) {
+				            permissionsList.textContent = "Not shared with anyone yet.";
+				            return;
+				        }
+
+				        permissions.forEach((permission) => {
+				            const row = document.createElement("div");
+				            row.className = "document-item";
+
+				            const userLabel = document.createElement("span");
+				            userLabel.textContent =
+				                `${permission.email} — ${permission.permissionType}`;
+
+				            const revokeButton = document.createElement("button");
+				            revokeButton.type = "button";
+				            revokeButton.className = "dashboard-button";
+				            revokeButton.textContent = "Revoke access";
+
+				            revokeButton.addEventListener("click", async () => {
+				                if (!window.confirm(
+				                    `Revoke ${permission.email}'s access to this document?`
+				                )) {
+				                    return;
+				                }
+
+				                const csrfToken = getCsrfToken();
+
+				                if (!csrfToken) {
+				                    listMessage.textContent =
+				                        "Security token missing. Refresh and try again.";
+				                    return;
+				                }
+
+				                revokeButton.disabled = true;
+
+				                try {
+				                    const revokeResponse = await fetch(
+				                        `/api/documents/${encodeURIComponent(documentData.id)}/permissions/${encodeURIComponent(permission.recipientId)}`,
+				                        {
+				                            method: "DELETE",
+				                            credentials: "same-origin",
+				                            headers: {
+				                                "Accept": "application/json",
+				                                "X-XSRF-TOKEN": csrfToken
+				                            }
+				                        }
+				                    );
+
+				                    if (revokeResponse.status === 401 ||
+				                        revokeResponse.redirected) {
+				                        window.location.href = "/login";
+				                        return;
+				                    }
+
+				                    if (!revokeResponse.ok) {
+				                        throw new Error(
+				                            `Revocation failed (HTTP ${revokeResponse.status}).`
+				                        );
+				                    }
+
+				                    listMessage.textContent =
+				                        `Access revoked for ${permission.email}.`;
+
+				                    await loadPermissions();
+				                } catch (error) {
+				                    listMessage.textContent = error.message;
+				                } finally {
+				                    revokeButton.disabled = false;
+				                }
+				            });
+
+				            row.append(userLabel, document.createTextNode(" "), revokeButton);
+				            permissionsList.appendChild(row);
+				        });
+				    } catch {
+				        permissionsList.textContent = "Could not load shared users.";
+				    }
+				}
+
+				loadPermissions();
+
+				documentList.appendChild(item);
+
+
+				
         });
     } catch (error) {
         listMessage.textContent = error.message;
