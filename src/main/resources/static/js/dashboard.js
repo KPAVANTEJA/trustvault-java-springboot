@@ -112,9 +112,164 @@ async function loadDocuments(keyword = "") {
             details.className = "muted";
             details.textContent =
                 `Size: ${documentData.sizeBytes ?? "Unknown"} bytes`;
+				
 
-            item.append(title, filename, details);
-            documentList.appendChild(item);
+				const downloadButton = document.createElement("button");
+				downloadButton.type = "button";
+				downloadButton.className = "dashboard-button";
+				downloadButton.textContent = "Download";
+
+				downloadButton.addEventListener("click", async () => {
+				    downloadButton.disabled = true;
+				    downloadButton.textContent = "Downloading...";
+				    listMessage.textContent = "";
+
+				    try {
+				        const response = await fetch(
+				            `/api/documents/${encodeURIComponent(documentData.id)}/download`,
+				            {
+				                method: "GET",
+				                credentials: "same-origin"
+				            }
+				        );
+
+				        if (response.status === 401 || response.redirected) {
+				            window.location.href = "/login";
+				            return;
+				        }
+
+				        if (!response.ok) {
+				            throw new Error(
+				                response.status === 404
+				                    ? "Document not found or access denied."
+				                    : `Download failed (HTTP ${response.status}).`
+				            );
+				        }
+
+				        const blob = await response.blob();
+				        const objectUrl = URL.createObjectURL(blob);
+				        const link = document.createElement("a");
+
+				        link.href = objectUrl;
+				        link.download = documentData.filename
+				            || documentData.originalFilename
+				            || "document";
+
+				        document.body.appendChild(link);
+				        link.click();
+				        link.remove();
+
+				        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+				    } catch (error) {
+				        listMessage.textContent = error.message;
+				    } finally {
+				        downloadButton.disabled = false;
+				        downloadButton.textContent = "Download";
+				    }
+				});
+
+
+				item.append(title, filename, details, downloadButton);
+
+				// Sharing controls for document owners.
+				const shareSection = document.createElement("div");
+				shareSection.style.marginTop = "16px";
+
+				const recipientInput = document.createElement("input");
+				recipientInput.type = "email";
+				recipientInput.placeholder = "Recipient's registered email";
+				recipientInput.maxLength = 254;
+				recipientInput.className = "dashboard-input";
+				recipientInput.setAttribute("aria-label", "Recipient email");
+
+				const permissionSelect = document.createElement("select");
+				permissionSelect.className = "dashboard-input";
+				permissionSelect.setAttribute("aria-label", "Permission type");
+
+				[
+				    { value: "VIEW", label: "View only" },
+				    { value: "EDIT", label: "Edit" }
+				].forEach((optionData) => {
+				    const option = document.createElement("option");
+				    option.value = optionData.value;
+				    option.textContent = optionData.label;
+				    permissionSelect.appendChild(option);
+				});
+
+				const shareButton = document.createElement("button");
+				shareButton.type = "button";
+				shareButton.className = "dashboard-button";
+				shareButton.textContent = "Share document";
+
+				shareButton.addEventListener("click", async () => {
+				    const email = recipientInput.value.trim();
+				    const csrfToken = getCsrfToken();
+
+				    if (!email) {
+				        listMessage.textContent = "Enter the recipient's email.";
+				        return;
+				    }
+
+				    if (!csrfToken) {
+				        listMessage.textContent =
+				            "Security token is missing. Refresh the page and try again.";
+				        return;
+				    }
+
+				    shareButton.disabled = true;
+				    listMessage.textContent = "";
+
+				    try {
+				        const response = await fetch(
+				            `/api/documents/${encodeURIComponent(documentData.id)}/permissions`,
+				            {
+				                method: "POST",
+				                credentials: "same-origin",
+				                headers: {
+				                    "Content-Type": "application/json",
+				                    "Accept": "application/json",
+				                    "X-XSRF-TOKEN": csrfToken
+				                },
+				                body: JSON.stringify({
+				                    email: email,
+				                    permissionType: permissionSelect.value
+				                })
+				            }
+				        );
+
+				        if (response.status === 401 || response.redirected) {
+				            window.location.href = "/login";
+				            return;
+				        }
+
+				        if (!response.ok) {
+				            throw new Error(
+				                `Sharing failed (HTTP ${response.status}). Check that you own the document and the recipient exists.`
+				            );
+				        }
+
+				        recipientInput.value = "";
+				        listMessage.textContent =
+				            `Document shared with ${email} successfully.`;
+				    } catch (error) {
+				        listMessage.textContent = error.message;
+				    } finally {
+				        shareButton.disabled = false;
+				    }
+				});
+
+				shareSection.append(
+				    recipientInput,
+				    permissionSelect,
+				    shareButton
+				);
+
+				item.appendChild(shareSection);
+				documentList.appendChild(item);
+
+				
+
+
         });
     } catch (error) {
         listMessage.textContent = error.message;
