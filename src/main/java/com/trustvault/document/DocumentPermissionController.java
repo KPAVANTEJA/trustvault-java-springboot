@@ -1,6 +1,7 @@
 
 package com.trustvault.document;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -67,5 +68,16 @@ public class DocumentPermissionController {
             documentId, recipientId, authentication.getName());
 
         return Map.of("message", "Permission revoked successfully.");
+    }
+    
+    
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    public List<Map<String, Object>> getPermissions(
+            @PathVariable Long documentId,
+            Authentication authentication) {
+
+        return permissionService.getDocumentPermissions(
+                documentId, authentication.getName());
     }
 }

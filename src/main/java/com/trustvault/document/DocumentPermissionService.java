@@ -4,6 +4,10 @@ package com.trustvault.document;
 import com.trustvault.user.AppUser;
 import com.trustvault.user.AppUserRepository;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -112,5 +116,37 @@ public class DocumentPermissionService {
                 HttpStatus.NOT_FOUND, "Permission not found."));
 
         permissionRepository.delete(permission);
+    }
+    
+    
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getDocumentPermissions(
+            Long documentId, String ownerEmail) {
+
+        AppUser owner = userRepository.findByEmailIgnoreCase(ownerEmail)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "User not found"));
+
+        Document document = documentRepository
+                .findByIdAndOwner_Id(documentId, owner.getId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Document not found"));
+
+        if (document.isDeleted()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Document not found");
+        }
+
+        return permissionRepository.findByDocument_Id(documentId)
+                .stream()
+                .map(permission -> {
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("recipientId", permission.getUser().getId());
+                    result.put("email", permission.getUser().getEmail());
+                    result.put("permissionType",
+                            permission.getPermissionType().name());
+                    return result;
+                })
+                .toList();
     }
 }
