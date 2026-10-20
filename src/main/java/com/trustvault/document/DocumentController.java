@@ -24,6 +24,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
+import com.trustvault.audit.AuditLogService;
+
 @RestController
 @RequestMapping("/api/documents")
 public class DocumentController {
@@ -35,6 +37,7 @@ public class DocumentController {
     private final DocumentStorageService storageService;
     
     private final DocumentPermissionRepository permissionRepository;
+    private final AuditLogService auditLogService;
     
     
 
@@ -42,11 +45,13 @@ public class DocumentController {
             DocumentRepository documentRepository,
             AppUserRepository userRepository,
             DocumentStorageService storageService,
-            DocumentPermissionRepository permissionRepository) {
+            DocumentPermissionRepository permissionRepository,
+            AuditLogService auditLogService) {
         this.documentRepository = documentRepository;
         this.userRepository = userRepository;
         this.storageService = storageService;
         this.permissionRepository = permissionRepository;
+        this.auditLogService = auditLogService;
     }
 
     @PostMapping
@@ -190,7 +195,7 @@ public class DocumentController {
     
 
 @GetMapping("/{id}/download")
-@Transactional(readOnly = true)
+@Transactional
 public ResponseEntity<Resource> downloadDocument(
         @PathVariable Long id,
         Authentication authentication) {
@@ -235,6 +240,8 @@ public ResponseEntity<Resource> downloadDocument(
             ? MediaType.APPLICATION_OCTET_STREAM_VALUE
             : document.getContentType();
 
+    auditLogService.recordDownload(document, user);
+    
     return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType(contentType))
             .header(HttpHeaders.CACHE_CONTROL, "no-store")
