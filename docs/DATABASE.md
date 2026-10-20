@@ -74,3 +74,69 @@ Stores document metadata. File contents are stored separately in private file st
 The document permission and audit event tables will be documented here after their entities and database mappings have been implemented and verified.
 
 **Deployment note:** This document describes the initial database model. Confirm the actual Oracle schema, constraints, and application startup before treating it as the deployed schema.
+
+## Audit Logging
+
+TrustVault records successful document download events in the `TV_AUDIT_LOGS` table.
+
+### Create Audit Table
+
+```sql
+CREATE TABLE TV_AUDIT_LOGS (
+    ID NUMBER(19) PRIMARY KEY,
+    DOCUMENT_ID NUMBER(19) NOT NULL,
+    USER_ID NUMBER(19) NOT NULL,
+    ACTION VARCHAR2(50) NOT NULL,
+    OUTCOME VARCHAR2(20) NOT NULL,
+    EVENT_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    CONSTRAINT FK_TV_AUDIT_DOCUMENT
+        FOREIGN KEY (DOCUMENT_ID)
+        REFERENCES TV_DOCUMENTS(ID),
+
+    CONSTRAINT FK_TV_AUDIT_USER
+        FOREIGN KEY (USER_ID)
+        REFERENCES TV_USERS(ID)
+);
+```
+
+### Create Audit ID Sequence
+
+```sql
+CREATE SEQUENCE TV_AUDIT_LOG_SEQ
+    START WITH 1
+    INCREMENT BY 1
+    NOCACHE;
+```
+
+### Verify Audit Records
+
+```sql
+SELECT
+    ID,
+    DOCUMENT_ID,
+    USER_ID,
+    ACTION,
+    OUTCOME,
+    EVENT_TIME
+FROM TV_AUDIT_LOGS
+ORDER BY EVENT_TIME DESC;
+```
+
+### Audit Event Fields
+
+| Column | Description |
+|---|---|
+| `ID` | Unique audit event identifier |
+| `DOCUMENT_ID` | Document associated with the event |
+| `USER_ID` | User associated with the event |
+| `ACTION` | Action performed, such as `DOCUMENT_DOWNLOAD` |
+| `OUTCOME` | Result recorded, such as `SUCCESS` |
+| `EVENT_TIME` | Time the audit event was recorded |
+
+### Notes
+
+- The foreign-key references assume the existing tables are named `TV_DOCUMENTS` and `TV_USERS`, with primary keys named `ID`.
+- The sequence name must match the sequence configured in the `AuditLog` entity.
+- These scripts create the audit table and sequence; they do not recreate existing application tables.
+- Audit records should be treated as append-only by the application. Database privileges should restrict who can modify or delete them.
