@@ -51,6 +51,12 @@ public class DocumentPermissionService {
             .findByIdAndOwner_Id(documentId, owner.getId())
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "Document not found."));
+        
+        if (document.isDeleted()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Document not found.");
+        }
 
         AppUser recipient = userRepository
             .findByEmailIgnoreCase(targetEmail.trim())
@@ -89,10 +95,16 @@ public class DocumentPermissionService {
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED, "User not found."));
 
-        documentRepository
+        Document document = documentRepository
             .findByIdAndOwner_Id(documentId, owner.getId())
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "Document not found."));
+        
+        if (document.isDeleted()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Document not found.");
+        }
 
         DocumentPermission permission = permissionRepository
             .findByDocument_IdAndUser_Id(documentId, recipientId)

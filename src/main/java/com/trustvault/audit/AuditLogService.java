@@ -53,4 +53,16 @@ public class AuditLogService {
 
         auditLogRepository.saveAndFlush(event);
     }
+    
+    @Transactional
+    public void recordDeletion(Document document, AppUser user) {
+        AuditLog event = new AuditLog(
+                document,
+                user,
+                "DOCUMENT_DELETE",
+                "SUCCESS"
+        );
+
+        auditLogRepository.save(event);
+    }
 }

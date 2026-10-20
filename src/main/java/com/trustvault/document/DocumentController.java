@@ -210,6 +210,12 @@ public ResponseEntity<Resource> downloadDocument(
             .orElseThrow(() -> new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
                     "Document not found."));
+    
+    if (document.isDeleted()) {
+        throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Document not found.");
+    }
 
     boolean isOwner = document.getOwner().getId().equals(user.getId());
 
@@ -258,5 +264,42 @@ public ResponseEntity<Resource> downloadDocument(
                     "attachment; filename=\"document-" + document.getId() + "\"")
             .body(resource);
 }
+
+
+@DeleteMapping("/{id}")
+@Transactional
+@PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+public ResponseEntity<Void> deleteDocument(
+        @PathVariable Long id,
+        Authentication authentication) {
+
+    AppUser user = userRepository
+            .findByEmailIgnoreCase(authentication.getName())
+            .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Authenticated user not found."));
+
+    Document document = documentRepository
+            .findByIdAndOwner_Id(id, user.getId())
+            .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Document not found."));
+
+    if (document.isDeleted()) {
+        throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Document not found.");
+    }
+
+    document.setDeleted(true);
+    documentRepository.save(document);
+
+    storageService.deleteQuietly(document.getStorageKey());
+
+    auditLogService.recordDeletion(document, user);
+
+    return ResponseEntity.noContent().build();
+}
+
 
 }

@@ -16,12 +16,17 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     boolean existsByStorageKey(String storageKey);
     
+    List<Document> findByOwner_IdAndDeletedFalseOrderByCreatedAtDesc(Long ownerId);
+    
     @Query("""
     	    SELECT DISTINCT d
     	    FROM Document d
     	    LEFT JOIN DocumentPermission p ON p.document = d
-    	    WHERE d.owner.id = :userId
-    	       OR p.user.id = :userId
+    	    WHERE d.deleted = false
+    	    AND ( 
+    	    		d.owner.id = :userId
+    	       OR p.user.id = :userId 
+    	       )
     	    ORDER BY d.createdAt DESC
     	    """)
     	List<Document> findOwnedOrSharedDocuments(

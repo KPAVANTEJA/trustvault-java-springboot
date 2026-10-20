@@ -47,6 +47,9 @@ public class Document {
 
     @Column(name = "CREATED_AT", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    
+    @Column(name = "IS_DELETED", nullable = false)
+    private boolean deleted = false;
 
     protected Document() {
         // Required by JPA.
@@ -104,5 +107,13 @@ public class Document {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+    
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 }
