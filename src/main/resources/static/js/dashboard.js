@@ -51,6 +51,35 @@ async function loadDashboard() {
     }
 }
 
+
+function buildDocumentSearchUrl(keyword = "") {
+    const params = new URLSearchParams();
+
+    if (keyword.trim()) {
+        params.set("keyword", keyword.trim());
+    }
+
+    const owner = document.getElementById("search-owner").value.trim();
+    const category = document.getElementById("search-category").value;
+    const fromDate = document.getElementById("search-from-date").value;
+    const toDate = document.getElementById("search-to-date").value;
+
+    if (owner) params.set("owner", owner);
+    if (category) params.set("category", category);
+    if (fromDate) params.set("fromDate", fromDate);
+    if (toDate) params.set("toDate", toDate);
+
+    const query = params.toString();
+
+    return query
+        ? `/api/documents/search?${query}`
+        : "/api/documents/search";
+}
+
+
+
+
+
 // Load documents visible to the current user.
 
 async function loadDocuments(keyword = "") {
@@ -58,9 +87,7 @@ async function loadDocuments(keyword = "") {
     listMessage.textContent = "";
 
     try {
-        const url = keyword.trim()
-            ? `/api/documents/search?keyword=${encodeURIComponent(keyword.trim())}`
-            : "/api/documents";
+		const url = buildDocumentSearchUrl(keyword);
 
         const response = await fetch(url, {
             credentials: "same-origin",
@@ -466,6 +493,26 @@ documentSearch.addEventListener("input", () => {
     }, 400);
 });
 
+document
+    .getElementById("apply-search-filters")
+    .addEventListener("click", () => {
+        const keyword =
+            document.getElementById("document-search").value;
+
+        loadDocuments(keyword);
+    });
+
+document
+    .getElementById("clear-search-filters")
+    .addEventListener("click", () => {
+        document.getElementById("document-search").value = "";
+        document.getElementById("search-owner").value = "";
+        document.getElementById("search-category").value = "";
+        document.getElementById("search-from-date").value = "";
+        document.getElementById("search-to-date").value = "";
+
+        loadDocuments("");
+    });
 
 // Start the dashboard.
 loadDashboard();

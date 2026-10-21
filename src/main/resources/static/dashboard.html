@@ -144,6 +144,40 @@
         placeholder="Enter a document title..."
         maxlength="200"
     >
+    
+   <div class="search-filters">
+    <label for="search-owner">Owner</label>
+    <input
+        type="text"
+        id="search-owner"
+        placeholder="Search by owner name or email">
+
+    <label for="search-category">Category</label>
+    <select id="search-category">
+        <option value="">All categories</option>
+        <option value="Uncategorized">Uncategorized</option>
+        <option value="HR">HR</option>
+        <option value="Finance">Finance</option>
+        <option value="Contracts">Contracts</option>
+        <option value="Reports">Reports</option>
+        <option value="Technical">Technical</option>
+        <option value="Other">Other</option>
+    </select>
+
+    <label for="search-from-date">From date</label>
+    <input type="date" id="search-from-date">
+
+    <label for="search-to-date">To date</label>
+    <input type="date" id="search-to-date">
+
+    <button type="button" id="apply-search-filters">
+        Apply Filters
+    </button>
+
+    <button type="button" id="clear-search-filters">
+        Clear Filters
+    </button>
+</div>
 
     <div id="document-list" class="document-list">
         <p class="muted">Loading documents...</p>

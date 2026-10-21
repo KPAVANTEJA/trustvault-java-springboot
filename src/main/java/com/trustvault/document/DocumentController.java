@@ -3,6 +3,7 @@ package com.trustvault.document;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.trustvault.user.AppUser;
@@ -19,7 +20,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+
 import org.springframework.core.io.Resource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -333,37 +337,84 @@ public ResponseEntity<Void> deleteDocument(
 @Transactional(readOnly = true)
 public List<Map<String, Object>> searchDocuments(
         @RequestParam(defaultValue = "") String keyword,
+        @RequestParam(defaultValue = "") String owner,
+        @RequestParam(defaultValue = "") String category,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+        LocalDate fromDate,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+        LocalDate toDate,
         Authentication authentication) {
 
-    AppUser user = userRepository.findByEmailIgnoreCase(
-            authentication.getName()
-    ).orElseThrow(() -> new ResponseStatusException(
-            HttpStatus.UNAUTHORIZED, "User not found"));
+    AppUser user = userRepository
+            .findByEmailIgnoreCase(authentication.getName())
+            .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "User not found"));
 
-    String searchKeyword = keyword.trim();
+    if (fromDate != null && toDate != null
+            && fromDate.isAfter(toDate)) {
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Start date must not be after end date.");
+    }
+
+    // First restrict results to documents this user may access.
     List<Document> documents;
 
     if (user.getRole() == UserRole.ADMIN) {
-        documents = documentRepository.searchByOwnerRoleAndTitle(
-                UserRole.ADMIN, searchKeyword);
+        documents = documentRepository
+                .findByOwner_RoleAndDeletedFalseOrderByCreatedAtDesc(
+                        UserRole.ADMIN);
     } else if (user.getRole() == UserRole.VIEWER) {
-        documents = documentRepository.searchSharedDocuments(
-                user.getId(), searchKeyword);
+        documents = documentRepository
+                .findSharedDocuments(user.getId());
     } else {
-        documents = documentRepository.searchAccessibleDocuments(
-                user.getId(), searchKeyword);
+        documents = documentRepository
+                .findOwnedOrSharedDocuments(user.getId());
     }
 
-    return documents.stream().map(document -> {
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("id", document.getId());
-        result.put("title", document.getTitle());
-        result.put("filename", document.getOriginalFilename());
-        result.put("category", document.getCategory());
-        result.put("sizeBytes", document.getSizeBytes());
-        result.put("createdAt", document.getCreatedAt());
-        return result;
-    }).toList();
+    String nameFilter = keyword.trim();
+    String ownerFilter = owner.trim();
+    String categoryFilter = category.trim();
+
+    return documents.stream()
+            .filter(d ->
+                    matchesFilter(d.getTitle(), nameFilter)
+                    || matchesFilter(
+                            d.getOriginalFilename(), nameFilter))
+            .filter(d ->
+                    matchesFilter(d.getOwner().getFullName(), ownerFilter)
+                    || matchesFilter(d.getOwner().getEmail(), ownerFilter))
+            .filter(d ->
+                    matchesFilter(d.getCategory(), categoryFilter))
+            .filter(d -> fromDate == null
+                    || !d.getCreatedAt().toLocalDate()
+                            .isBefore(fromDate))
+            .filter(d -> toDate == null
+                    || !d.getCreatedAt().toLocalDate()
+                            .isAfter(toDate))
+            .map(d -> {
+                Map<String, Object> result = new LinkedHashMap<>();
+                result.put("id", d.getId());
+                result.put("title", d.getTitle());
+                result.put("filename", d.getOriginalFilename());
+                result.put("category", d.getCategory());
+                result.put("ownerName", d.getOwner().getFullName());
+                result.put("ownerEmail", d.getOwner().getEmail());
+                result.put("sizeBytes", d.getSizeBytes());
+                result.put("createdAt", d.getCreatedAt());
+                return result;
+            })
+            .toList();
+}
+
+private boolean matchesFilter(String value, String filter) {
+    return filter == null
+            || filter.isBlank()
+            || (value != null
+                && value.toLowerCase(Locale.ROOT)
+                        .contains(filter.trim().toLowerCase(Locale.ROOT)));
 }
 
 
