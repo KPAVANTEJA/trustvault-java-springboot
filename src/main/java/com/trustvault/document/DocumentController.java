@@ -167,11 +167,14 @@ public class DocumentController {
             );
 
             document = documentRepository.saveAndFlush(document);
+            
+            auditLogService.recordUpload(document, owner);
 
             return Map.of(
                 "id", document.getId(),
                 "title", document.getTitle(),
                 "filename", document.getOriginalFilename(),
+                "category", document.getCategory(),
                 "sizeBytes", document.getSizeBytes(),
                 "ownerEmail", owner.getEmail(),
                 "createdAt", document.getCreatedAt().toString()

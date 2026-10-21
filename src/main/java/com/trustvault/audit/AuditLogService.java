@@ -2,6 +2,7 @@
 package com.trustvault.audit;
 
 import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,7 +11,7 @@ import com.trustvault.user.AppUser;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.annotation.Transactional;
+
 
 @Service
 public class AuditLogService {
@@ -31,6 +32,19 @@ public class AuditLogService {
         );
 
         auditLogRepository.save(event);
+    }
+    
+    
+    @Transactional
+    public void recordUpload(Document document, AppUser user) {
+        AuditLog event = new AuditLog(
+            document,
+            user,
+            "DOCUMENT_UPLOAD",
+            "SUCCESS"
+        );
+
+        auditLogRepository.saveAndFlush(event);
     }
     
     @Transactional(readOnly = true)
