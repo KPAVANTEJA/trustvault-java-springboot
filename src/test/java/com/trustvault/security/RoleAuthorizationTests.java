@@ -44,4 +44,12 @@ class RoleAuthorizationTests {
         mockMvc.perform(get("/api/admin/access-check"))
             .andExpect(status().isForbidden());
     }
+    
+
+    @Test
+    void unauthenticatedUserCannotAccessDocuments() throws Exception {
+        mockMvc.perform(get("/api/documents"))
+            .andExpect(status().is3xxRedirection());
+    }
+
 }
