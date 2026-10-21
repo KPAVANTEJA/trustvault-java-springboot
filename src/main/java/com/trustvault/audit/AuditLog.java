@@ -50,6 +50,12 @@ public class AuditLog {
 
     @Column(name = "EVENT_TIME", nullable = false, updatable = false)
     private LocalDateTime eventTime;
+    
+    @Column(name = "PREVIOUS_HASH", length = 64)
+    private String previousHash;
+
+    @Column(name = "EVENT_HASH", length = 64)
+    private String eventHash;
 
     protected AuditLog() {
     }
@@ -70,5 +76,21 @@ public class AuditLog {
         if (eventTime == null) {
             eventTime = LocalDateTime.now();
         }
+    }
+    
+    public String getPreviousHash() {
+        return previousHash;
+    }
+
+    public void setPreviousHash(String previousHash) {
+        this.previousHash = previousHash;
+    }
+
+    public String getEventHash() {
+        return eventHash;
+    }
+
+    public void setEventHash(String eventHash) {
+        this.eventHash = eventHash;
     }
 }
