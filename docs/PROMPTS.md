@@ -170,6 +170,20 @@ This file records AI assistance, identified mistakes or limitations, corrective 
 
 **Evidence commit:** Not yet available. No commit link is recorded here because one has not been supplied.
 
+## Entry 13 - 2026-10-21 - Automated Audit Tampering Tests
+
+**Prompt summary:** Add automated tests to verify that TrustVault detects modifications to audit records, deleted events, broken chain links, and altered checkpoints.
+
+**AI output:** A Spring Boot integration-test class was proposed to exercise the audit integrity verifier against simulated tampering.
+
+**Limitation identified:** A passing test suite is meaningful only if the tests reach the intended verification checks and fail specifically when integrity is violated, rather than because of unrelated database initialization or configuration errors.
+
+**Corrective action:** Configure the test environment, initialize the audit-chain head when necessary, and use assertions to verify that the integrity service rejects the tested tampering scenarios.
+
+**Verification status:** The user confirmed that the tests passed. The tests cover the four implemented scenarios; broader adversarial testing and production deployment verification remain necessary.
+
+**Evidence commit:** Not yet available.
+
 ## Logging Rules
 
 - Keep entries tied to actual AI-assisted work. Do not invent prompts, AI outputs, corrections, or test results.
