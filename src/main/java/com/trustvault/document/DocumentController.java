@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.trustvault.user.AppUser;
 import com.trustvault.user.AppUserRepository;
+import com.trustvault.user.UserRole;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -175,13 +176,23 @@ public class DocumentController {
     public List<Map<String, Object>> listOwnDocuments(
             Authentication authentication) {
 
-        AppUser user = userRepository
-            .findByEmailIgnoreCase(authentication.getName())
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.UNAUTHORIZED, "Authenticated user not found."));
+    	AppUser user = userRepository
+    		    .findByEmailIgnoreCase(authentication.getName())
+    		    .orElseThrow(() -> new ResponseStatusException(
+    		        HttpStatus.NOT_FOUND, "User not found."));
 
-        return documentRepository
-        		.findOwnedOrSharedDocuments(user.getId())
+    		List<Document> documents;
+
+    		if (user.getRole() == UserRole.ADMIN) {
+    		    documents = documentRepository
+    		        .findByOwner_RoleAndDeletedFalseOrderByCreatedAtDesc(UserRole.ADMIN);
+    		} else if (user.getRole() == UserRole.VIEWER) {
+    		    documents = documentRepository.findSharedDocuments(user.getId());
+    		} else {
+    		    documents = documentRepository.findOwnedOrSharedDocuments(user.getId());
+    		}
+
+        return documents
             .stream()
             .map(document -> Map.<String, Object>of(
                 "id", document.getId(),
@@ -302,7 +313,9 @@ public ResponseEntity<Void> deleteDocument(
 }
 
 
+
 @GetMapping("/search")
+@Transactional(readOnly = true)
 public List<Map<String, Object>> searchDocuments(
         @RequestParam(defaultValue = "") String keyword,
         Authentication authentication) {
@@ -312,9 +325,21 @@ public List<Map<String, Object>> searchDocuments(
     ).orElseThrow(() -> new ResponseStatusException(
             HttpStatus.UNAUTHORIZED, "User not found"));
 
-    return documentRepository.searchAccessibleDocuments(
-            user.getId(), keyword.trim()
-    ).stream().map(document -> {
+    String searchKeyword = keyword.trim();
+    List<Document> documents;
+
+    if (user.getRole() == UserRole.ADMIN) {
+        documents = documentRepository.searchByOwnerRoleAndTitle(
+                UserRole.ADMIN, searchKeyword);
+    } else if (user.getRole() == UserRole.VIEWER) {
+        documents = documentRepository.searchSharedDocuments(
+                user.getId(), searchKeyword);
+    } else {
+        documents = documentRepository.searchAccessibleDocuments(
+                user.getId(), searchKeyword);
+    }
+
+    return documents.stream().map(document -> {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("id", document.getId());
         result.put("title", document.getTitle());
@@ -324,6 +349,7 @@ public List<Map<String, Object>> searchDocuments(
         return result;
     }).toList();
 }
+
 
 
 }
