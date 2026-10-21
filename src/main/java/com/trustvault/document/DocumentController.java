@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -377,6 +379,11 @@ public Map<String, Object> updateDocument(
 
     if (!changes.containsKey("title")
             && !changes.containsKey("category")) {
+    	
+    	auditLogService.recordDocumentUpdateFailure(
+    	        document, user, "INVALID_INPUT");
+    	
+    	
         throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
                 "Provide a title or category to update.");
@@ -428,6 +435,180 @@ public Map<String, Object> updateDocument(
             "ownerEmail", document.getOwner().getEmail(),
             "message", "Document metadata updated successfully."
     );
+}
+
+
+@PostMapping("/{id}/content")
+@Transactional
+public Map<String, Object> replaceDocumentContent(
+        @PathVariable Long id,
+        @RequestParam("file") MultipartFile file,
+        Authentication authentication) {
+
+    AppUser user = userRepository
+            .findByEmailIgnoreCase(authentication.getName())
+            .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "User not found."));
+
+    Document document = documentRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Document not found."));
+
+    if (document.isDeleted()) {
+        throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Document not found.");
+    }
+
+    boolean isOwner = document.getOwner().getId().equals(user.getId());
+
+    if (!isOwner) {
+        DocumentPermission permission = permissionRepository
+                .findByDocument_IdAndUser_Id(id, user.getId())
+                .orElse(null);
+
+        if (permission == null
+                || permission.getPermissionType() != PermissionType.EDIT) {
+
+            auditLogService.recordDocumentUpdateFailure(
+                    document, user, "DENIED");
+
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Document not found.");
+        }
+    }
+
+    // Apply the same upload validation rules.
+    if (file == null || file.isEmpty()) {
+    	
+    	auditLogService.recordDocumentUpdateFailure(
+    	        document, user, "INVALID_INPUT");
+    	
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST, "Choose a non-empty file.");
+    }
+
+    if (file.getSize() > MAX_FILE_SIZE) {
+    	
+    	auditLogService.recordDocumentUpdateFailure(
+    	        document, user, "INVALID_INPUT");
+    	
+        throw new ResponseStatusException(
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                "Maximum file size is 10 MB.");
+    }
+
+    String originalFilename = file.getOriginalFilename();
+
+    if (originalFilename == null || originalFilename.isBlank()) {
+    	
+    	auditLogService.recordDocumentUpdateFailure(
+    	        document, user, "INVALID_INPUT");
+    	
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST, "Filename is required.");
+    }
+
+    originalFilename = originalFilename.replace('\\', '/');
+    originalFilename = originalFilename.substring(
+            originalFilename.lastIndexOf('/') + 1);
+
+    if (originalFilename.isBlank() || originalFilename.length() > 255) {
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST, "Invalid filename.");
+    }
+
+    String extension = originalFilename.contains(".")
+            ? originalFilename.substring(
+                    originalFilename.lastIndexOf('.') + 1)
+                    .toLowerCase(java.util.Locale.ROOT)
+            : "";
+
+    Map<String, String> allowedTypes = Map.of(
+            "pdf", "application/pdf",
+            "txt", "text/plain",
+            "png", "image/png",
+            "jpg", "image/jpeg",
+            "jpeg", "image/jpeg"
+    );
+
+    String expectedType = allowedTypes.get(extension);
+
+    if (expectedType == null) {
+    	
+    	auditLogService.recordDocumentUpdateFailure(
+    	        document, user, "INVALID_INPUT");
+    	
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Supported formats: PDF, TXT, PNG, JPG, JPEG.");
+    }
+
+    String suppliedType = file.getContentType();
+
+    if (suppliedType != null
+            && !suppliedType.equalsIgnoreCase(expectedType)
+            && !suppliedType.equalsIgnoreCase("application/octet-stream")) {
+
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "File extension and content type do not match.");
+    }
+
+    String oldStorageKey = document.getStorageKey();
+    String newStorageKey = null;
+
+    try {
+        // Store the new file without deleting the old one yet.
+        newStorageKey = storageService.store(file);
+
+        document.replaceStoredFile(
+                originalFilename,
+                newStorageKey,
+                expectedType,
+                file.getSize());
+
+        documentRepository.saveAndFlush(document);
+
+        // Uses the existing audited metadata-update service method.
+        auditLogService.recordDocumentUpdate(document, user);
+
+        String replacementKey = newStorageKey;
+
+        // Delete the old file only after the transaction commits.
+        // If the database transaction rolls back, delete the new file.
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        if (status == TransactionSynchronization.STATUS_COMMITTED) {
+                            storageService.deleteQuietly(oldStorageKey);
+                        } else {
+                            storageService.deleteQuietly(replacementKey);
+                        }
+                    }
+                });
+
+        return Map.of(
+                "id", document.getId(),
+                "title", document.getTitle(),
+                "filename", document.getOriginalFilename(),
+                "category", document.getCategory(),
+                "sizeBytes", document.getSizeBytes(),
+                "message", "Document content replaced successfully."
+        );
+
+    } catch (IOException ex) {
+        throw new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Unable to store replacement document.");
+
+    } catch (RuntimeException ex) {
+        if (newStorageKey != null) {
+            storageService.deleteQuietly(newStorageKey);
+        }
+
+        throw ex;
+    }
 }
 
 

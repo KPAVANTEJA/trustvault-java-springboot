@@ -95,6 +95,18 @@ public class Document {
         this.title = title;
         this.category = category;
     }
+    
+    public void replaceStoredFile(
+            String originalFilename,
+            String storageKey,
+            String contentType,
+            Long sizeBytes) {
+
+        this.originalFilename = originalFilename;
+        this.storageKey = storageKey;
+        this.contentType = contentType;
+        this.sizeBytes = sizeBytes;
+    }
 
     @PrePersist
     void beforeInsert() {
