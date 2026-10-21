@@ -19,6 +19,10 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.springframework.core.io.Resource;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 class DocumentDownloadAuthorizationTests {
@@ -37,6 +41,9 @@ class DocumentDownloadAuthorizationTests {
 
     @MockitoBean
     private AuditLogService auditLogService;
+    
+    @MockitoBean
+    private DocumentStorageService storageService;
 
     @Test
     @WithMockUser(username = "viewer@example.com", roles = "VIEWER")
@@ -66,4 +73,47 @@ class DocumentDownloadAuthorizationTests {
         verify(auditLogService)
             .recordDownloadFailure(document, viewer, "DENIED");
     }
+    
+
+@Test
+@WithMockUser(username = "viewer@example.com", roles = "VIEWER")
+void viewerWithViewPermissionCanDownloadDocument() throws Exception {
+    AppUser viewer = mock(AppUser.class);
+    AppUser owner = mock(AppUser.class);
+    Document document = mock(Document.class);
+    DocumentPermission permission = mock(DocumentPermission.class);
+
+    Path tempFile = Files.createTempFile("trustvault-test-", ".txt");
+
+    try {
+        Files.writeString(tempFile, "test document content");
+
+        when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
+            .thenReturn(Optional.of(viewer));
+        when(viewer.getId()).thenReturn(2L);
+        when(owner.getId()).thenReturn(1L);
+
+        when(documentRepository.findById(100L))
+            .thenReturn(Optional.of(document));
+        when(document.isDeleted()).thenReturn(false);
+        when(document.getOwner()).thenReturn(owner);
+        when(document.getStorageKey()).thenReturn("test-storage-key");
+        when(document.getContentType()).thenReturn("text/plain");
+
+        when(permissionRepository.findByDocument_IdAndUser_Id(100L, 2L))
+            .thenReturn(Optional.of(permission));
+        when(permission.getPermissionType()).thenReturn(PermissionType.VIEW);
+
+        when(storageService.resolve("test-storage-key"))
+            .thenReturn(tempFile);
+
+        mockMvc.perform(get("/api/documents/100/download"))
+            .andExpect(status().isOk());
+
+        verify(auditLogService).recordDownload(document, viewer);
+    } finally {
+        Files.deleteIfExists(tempFile);
+    }
+}
+
 }
