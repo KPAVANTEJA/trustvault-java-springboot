@@ -93,4 +93,29 @@ public class AuditLog {
     public void setEventHash(String eventHash) {
         this.eventHash = eventHash;
     }
+    
+    
+    public Long getId() {
+        return id;
+    }
+
+    public Document getDocument() {
+        return document;
+    }
+
+    public AppUser getUser() {
+        return user;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
+    public String getOutcome() {
+        return outcome;
+    }
+
+    public LocalDateTime getEventTime() {
+        return eventTime;
+    }
 }

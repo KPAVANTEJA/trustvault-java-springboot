@@ -29,6 +29,17 @@ public class AuditChainHead {
     
     @Column(name = "CHAIN_START_AFTER_ID")
     private Long chainStartAfterId;
+    
+    @Column(name = "HISTORICAL_BASELINE_HMAC", length = 64)
+    private String historicalBaselineHmac;
+
+    public String getHistoricalBaselineHmac() {
+        return historicalBaselineHmac;
+    }
+
+    public void setHistoricalBaselineHmac(String historicalBaselineHmac) {
+        this.historicalBaselineHmac = historicalBaselineHmac;
+    }
 
     protected AuditChainHead() {
     }

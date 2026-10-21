@@ -17,9 +17,13 @@ import org.springframework.data.domain.Pageable;
 public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
+    
+    private final AuditIntegrityService auditIntegrityService;
 
-    public AuditLogService(AuditLogRepository auditLogRepository) {
+    public AuditLogService(AuditLogRepository auditLogRepository,
+    		AuditIntegrityService auditIntegrityService) {
         this.auditLogRepository = auditLogRepository;
+        this.auditIntegrityService = auditIntegrityService;
     }
 
     @Transactional
@@ -31,7 +35,7 @@ public class AuditLogService {
             "SUCCESS"
         );
 
-        auditLogRepository.save(event);
+        auditIntegrityService.append(event);
     }
     
     
@@ -44,7 +48,7 @@ public class AuditLogService {
             "SUCCESS"
         );
 
-        auditLogRepository.saveAndFlush(event);
+        auditIntegrityService.append(event);
     }
     
     @Transactional(readOnly = true)
@@ -65,7 +69,7 @@ public class AuditLogService {
                 outcome
         );
 
-        auditLogRepository.saveAndFlush(event);
+        auditIntegrityService.append(event);
     }
     
     @Transactional
@@ -77,7 +81,7 @@ public class AuditLogService {
                 "SUCCESS"
         );
 
-        auditLogRepository.save(event);
+        auditIntegrityService.append(event);
     }
     
     @Transactional
@@ -89,7 +93,7 @@ public class AuditLogService {
             "SUCCESS"
         );
 
-        auditLogRepository.saveAndFlush(event);
+        auditIntegrityService.append(event);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -105,6 +109,6 @@ public class AuditLogService {
             outcome
         );
 
-        auditLogRepository.saveAndFlush(event);
+        auditIntegrityService.append(event);
     }
 }

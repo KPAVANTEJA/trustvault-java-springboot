@@ -22,12 +22,5 @@ public interface AuditChainHeadRepository
     Optional<AuditChainHead> findByIdForUpdate(
             @Param("id") Long id);
     
-    @Query("SELECT MAX(a.id) FROM AuditLog a")
-    Long findMaxAuditLogId();
-
-    boolean existsByEventHashIsNotNull();
-
-    List<AuditLog> findByEventHashIsNotNullOrderByIdAsc();
-
-    boolean existsByIdGreaterThanAndEventHashIsNull(Long id);
+ 
 }
