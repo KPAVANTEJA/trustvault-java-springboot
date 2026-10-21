@@ -57,10 +57,15 @@ public class DocumentController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    
     @Transactional
     public Map<String, Object> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
+            @RequestParam(
+            	    name = "category",
+            	    defaultValue = "Uncategorized"
+            	) String category,
             Authentication authentication) {
 
         if (file == null || file.isEmpty()) {
@@ -128,6 +133,14 @@ public class DocumentController {
                 HttpStatus.BAD_REQUEST,
                 "File extension and content type do not match.");
         }
+        
+        //Validate Category
+        if (category != null && category.trim().length() > 100) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Category must not exceed 100 characters."
+            );
+        }
 
         AppUser owner = userRepository
             .findByEmailIgnoreCase(authentication.getName())
@@ -145,7 +158,8 @@ public class DocumentController {
                 storageKey,
                 expectedType,
                 file.getSize(),
-                owner
+                owner,
+                category
             );
 
             document = documentRepository.saveAndFlush(document);
@@ -198,6 +212,7 @@ public class DocumentController {
                 "id", document.getId(),
                 "title", document.getTitle(),
                 "filename", document.getOriginalFilename(),
+                "category", document.getCategory(),
                 "sizeBytes", document.getSizeBytes(),
                 "createdAt", document.getCreatedAt().toString()
             ))
@@ -344,6 +359,7 @@ public List<Map<String, Object>> searchDocuments(
         result.put("id", document.getId());
         result.put("title", document.getTitle());
         result.put("filename", document.getOriginalFilename());
+        result.put("category", document.getCategory());
         result.put("sizeBytes", document.getSizeBytes());
         result.put("createdAt", document.getCreatedAt());
         return result;

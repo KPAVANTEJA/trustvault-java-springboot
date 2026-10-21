@@ -420,6 +420,10 @@ uploadForm.addEventListener("submit", async (event) => {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("file", fileInput.files[0]);
+	formData.append(
+	    "category",
+	    document.getElementById("category").value
+	);
 
     try {
         const response = await fetch("/api/documents", {

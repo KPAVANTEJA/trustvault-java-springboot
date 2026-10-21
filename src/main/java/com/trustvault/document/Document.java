@@ -50,9 +50,25 @@ public class Document {
     
     @Column(name = "IS_DELETED", nullable = false)
     private boolean deleted = false;
+    
+    @Column(name = "CATEGORY", nullable = false, length = 100)
+    private String category;
 
     protected Document() {
         // Required by JPA.
+    }
+    
+    
+    public Document(
+            String title,
+            String originalFilename,
+            String storageKey,
+            String contentType,
+            Long sizeBytes,
+            AppUser owner) {
+
+        this(title, originalFilename, storageKey,
+                contentType, sizeBytes, owner, "Uncategorized");
     }
 
     public Document(
@@ -61,13 +77,18 @@ public class Document {
             String storageKey,
             String contentType,
             Long sizeBytes,
-            AppUser owner) {
+            AppUser owner,
+            String category) {
         this.title = title;
         this.originalFilename = originalFilename;
         this.storageKey = storageKey;
         this.contentType = contentType;
         this.sizeBytes = sizeBytes;
         this.owner = owner;
+        this.category = (category == null || category.isBlank())
+                ? "Uncategorized"
+                : category.trim();
+        
     }
 
     @PrePersist
@@ -115,5 +136,9 @@ public class Document {
 
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
+    }
+    
+    public String getCategory() {
+        return category;
     }
 }

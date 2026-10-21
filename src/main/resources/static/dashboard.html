@@ -112,8 +112,21 @@
                 <label for="file">Choose file</label>
                 <input class="dashboard-input" id="file" name="file"
                        type="file" accept=".pdf,.txt,.png,.jpg,.jpeg" required>
+                       
+				<label for="category">Document Category</label>
+<select id="category" name="category">
+    <option value="Uncategorized">Uncategorized</option>
+    <option value="HR">HR</option>
+    <option value="Finance">Finance</option>
+    <option value="Contracts">Contracts</option>
+    <option value="Reports">Reports</option>
+    <option value="Technical">Technical</option>
+    <option value="Other">Other</option>
+</select>
 
                 <button class="dashboard-button" type="submit">Upload document</button>
+                
+                
             </form>
 
             <p id="upload-message" class="message" role="status"></p>
