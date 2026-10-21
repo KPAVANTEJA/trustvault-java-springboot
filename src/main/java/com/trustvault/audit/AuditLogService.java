@@ -79,4 +79,32 @@ public class AuditLogService {
 
         auditLogRepository.save(event);
     }
+    
+    @Transactional
+    public void recordDocumentUpdate(Document document, AppUser user) {
+        AuditLog event = new AuditLog(
+            document,
+            user,
+            "DOCUMENT_UPDATE",
+            "SUCCESS"
+        );
+
+        auditLogRepository.saveAndFlush(event);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordDocumentUpdateFailure(
+            Document document,
+            AppUser user,
+            String outcome) {
+
+        AuditLog event = new AuditLog(
+            document,
+            user,
+            "DOCUMENT_UPDATE",
+            outcome
+        );
+
+        auditLogRepository.saveAndFlush(event);
+    }
 }

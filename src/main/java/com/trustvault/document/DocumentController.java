@@ -335,6 +335,101 @@ public ResponseEntity<Void> deleteDocument(
 }
 
 
+@PutMapping("/{id}")
+@Transactional
+public Map<String, Object> updateDocument(
+        @PathVariable Long id,
+        @RequestBody Map<String, String> changes,
+        Authentication authentication) {
+
+    AppUser user = userRepository
+            .findByEmailIgnoreCase(authentication.getName())
+            .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "User not found."));
+
+    Document document = documentRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Document not found."));
+
+    if (document.isDeleted()) {
+        throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Document not found.");
+    }
+
+    // The owner may edit. Other users require explicit EDIT permission.
+    boolean isOwner = document.getOwner().getId().equals(user.getId());
+
+    if (!isOwner) {
+        DocumentPermission permission = permissionRepository
+                .findByDocument_IdAndUser_Id(id, user.getId())
+                .orElse(null);
+
+        if (permission == null
+                || permission.getPermissionType() != PermissionType.EDIT) {
+
+            auditLogService.recordDocumentUpdateFailure(
+                    document, user, "DENIED");
+
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Document not found.");
+        }
+    }
+
+    if (!changes.containsKey("title")
+            && !changes.containsKey("category")) {
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Provide a title or category to update.");
+    }
+
+    String updatedTitle = changes.get("title");
+
+    if (updatedTitle == null) {
+        updatedTitle = document.getTitle();
+    } else {
+        updatedTitle = updatedTitle.trim();
+
+        if (updatedTitle.isBlank() || updatedTitle.length() > 200) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Title must be 1–200 characters.");
+        }
+    }
+
+    String updatedCategory = changes.get("category");
+
+    if (updatedCategory == null) {
+        updatedCategory = document.getCategory();
+    } else {
+        updatedCategory = updatedCategory.trim();
+
+        if (updatedCategory.isBlank()) {
+            updatedCategory = "Uncategorized";
+        }
+
+        if (updatedCategory.length() > 100) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Category must not exceed 100 characters.");
+        }
+    }
+
+    document.updateMetadata(updatedTitle, updatedCategory);
+    documentRepository.saveAndFlush(document);
+
+    // Same transaction as the metadata update.
+    auditLogService.recordDocumentUpdate(document, user);
+
+    return Map.of(
+            "id", document.getId(),
+            "title", document.getTitle(),
+            "category", document.getCategory(),
+            "filename", document.getOriginalFilename(),
+            "ownerEmail", document.getOwner().getEmail(),
+            "message", "Document metadata updated successfully."
+    );
+}
+
 
 @GetMapping("/search")
 @Transactional(readOnly = true)

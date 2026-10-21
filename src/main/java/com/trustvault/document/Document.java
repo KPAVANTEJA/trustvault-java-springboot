@@ -90,6 +90,11 @@ public class Document {
                 : category.trim();
         
     }
+    
+    public void updateMetadata(String title, String category) {
+        this.title = title;
+        this.category = category;
+    }
 
     @PrePersist
     void beforeInsert() {
