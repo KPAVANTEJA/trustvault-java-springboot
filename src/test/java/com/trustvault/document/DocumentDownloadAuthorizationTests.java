@@ -10,12 +10,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.trustvault.audit.AuditLogService;
 import com.trustvault.user.AppUser;
 import com.trustvault.user.AppUserRepository;
+import com.trustvault.user.UserRole;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -503,6 +506,44 @@ void viewerCannotUploadDocuments() throws Exception {
 
     verify(documentRepository, never())
         .saveAndFlush(any(Document.class));
+}
+
+@Test
+@WithMockUser(
+    username = "viewer@example.com",
+    roles = "VIEWER"
+)
+void viewerListingAndSearchUseOnlySharedDocuments()
+        throws Exception {
+
+    AppUser viewer = mock(AppUser.class);
+    when(viewer.getId()).thenReturn(2L);
+    when(viewer.getRole()).thenReturn(UserRole.VIEWER);
+
+    when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
+        .thenReturn(Optional.of(viewer));
+
+    when(documentRepository.findSharedDocuments(2L))
+        .thenReturn(List.of());
+
+    mockMvc.perform(get("/api/documents"))
+        .andExpect(status().isOk())
+        .andExpect(content().json("[]"));
+
+    mockMvc.perform(get("/api/documents/search")
+            .param("keyword", "confidential"))
+        .andExpect(status().isOk())
+        .andExpect(content().json("[]"));
+
+    verify(documentRepository, times(2))
+        .findSharedDocuments(2L);
+
+    verify(documentRepository, never())
+        .findOwnedOrSharedDocuments(2L);
+
+    verify(documentRepository, never())
+        .findByOwner_RoleAndDeletedFalseOrderByCreatedAtDesc(
+            UserRole.ADMIN);
 }
 
 }
