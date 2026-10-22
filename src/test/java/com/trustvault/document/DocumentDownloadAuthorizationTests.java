@@ -249,4 +249,52 @@ void viewerCannotReplaceAnotherUsersDocumentContent()
     verify(storageService, never()).store(any(MultipartFile.class));
 }
 
+@Test
+@WithMockUser(
+    username = "viewer@example.com",
+    roles = "VIEWER"
+)
+void viewerWithViewPermissionCannotEditDocument() throws Exception {
+
+    AppUser viewer = mock(AppUser.class);
+    when(viewer.getId()).thenReturn(2L);
+
+    AppUser owner = mock(AppUser.class);
+    when(owner.getId()).thenReturn(1L);
+
+    Document document = mock(Document.class);
+    when(document.getId()).thenReturn(100L);
+    when(document.getOwner()).thenReturn(owner);
+    when(document.isDeleted()).thenReturn(false);
+
+    DocumentPermission permission = mock(DocumentPermission.class);
+    when(permission.getPermissionType()).thenReturn(PermissionType.VIEW);
+
+    when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
+        .thenReturn(Optional.of(viewer));
+
+    when(documentRepository.findById(100L))
+        .thenReturn(Optional.of(document));
+
+    when(permissionRepository.findByDocument_IdAndUser_Id(100L, 2L))
+        .thenReturn(Optional.of(permission));
+
+    mockMvc.perform(put("/api/documents/100")
+            .with(csrf())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                    "title": "Unauthorized change"
+                }
+                """))
+        .andExpect(status().isNotFound());
+
+    verify(auditLogService).recordDocumentUpdateFailure(
+        document, viewer, "DENIED"
+    );
+
+    verify(documentRepository, never())
+        .saveAndFlush(any(Document.class));
+}
+
 }
