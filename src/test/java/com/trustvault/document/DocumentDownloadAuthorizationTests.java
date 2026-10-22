@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 
 import java.util.Optional;
 
@@ -22,11 +23,13 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -194,6 +197,56 @@ void ownerCannotDeleteAnotherUsersDocument() throws Exception {
 
     verify(auditLogService, never())
         .recordDeletion(any(Document.class), any(AppUser.class));
+}
+
+@Test
+@WithMockUser(
+    username = "viewer@example.com",
+    roles = "VIEWER"
+)
+void viewerCannotReplaceAnotherUsersDocumentContent()
+        throws Exception {
+
+    AppUser viewer = mock(AppUser.class);
+    when(viewer.getId()).thenReturn(2L);
+
+    AppUser owner = mock(AppUser.class);
+    when(owner.getId()).thenReturn(1L);
+
+    Document document = mock(Document.class);
+    when(document.getId()).thenReturn(100L);
+    when(document.getOwner()).thenReturn(owner);
+    when(document.isDeleted()).thenReturn(false);
+
+    when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
+        .thenReturn(Optional.of(viewer));
+
+    when(documentRepository.findById(100L))
+        .thenReturn(Optional.of(document));
+
+    when(permissionRepository.findByDocument_IdAndUser_Id(100L, 2L))
+        .thenReturn(Optional.empty());
+
+    MockMultipartFile replacement = new MockMultipartFile(
+        "file",
+        "replacement.txt",
+        "text/plain",
+        "unauthorized replacement".getBytes(
+            java.nio.charset.StandardCharsets.UTF_8)
+    );
+
+    mockMvc.perform(
+            multipart("/api/documents/100/content")
+                .file(replacement)
+                .with(csrf())
+        )
+        .andExpect(status().isNotFound());
+
+    verify(auditLogService).recordDocumentUpdateFailure(
+        document, viewer, "DENIED"
+    );
+
+    verify(storageService, never()).store(any(MultipartFile.class));
 }
 
 }
