@@ -2,6 +2,7 @@
 package com.trustvault.document;
 
 import com.trustvault.user.AppUser;
+import com.trustvault.audit.AuditLogService;
 import com.trustvault.user.AppUserRepository;
 
 import java.util.LinkedHashMap;
@@ -19,14 +20,18 @@ public class DocumentPermissionService {
     private final DocumentRepository documentRepository;
     private final DocumentPermissionRepository permissionRepository;
     private final AppUserRepository userRepository;
+    
+    private final AuditLogService auditLogService;
 
     public DocumentPermissionService(
             DocumentRepository documentRepository,
             DocumentPermissionRepository permissionRepository,
-            AppUserRepository userRepository) {
+            AppUserRepository userRepository,
+            AuditLogService auditLogService) {
         this.documentRepository = documentRepository;
         this.permissionRepository = permissionRepository;
         this.userRepository = userRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional
@@ -51,15 +56,29 @@ public class DocumentPermissionService {
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED, "User not found."));
 
-        Document document = documentRepository
-            .findByIdAndOwner_Id(documentId, owner.getId())
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND, "Document not found."));
-        
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Document not found."));
+
         if (document.isDeleted()) {
             throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Document not found.");
+                    HttpStatus.NOT_FOUND, "Document not found.");
+        }
+
+        AppUser documentOwner = document.getOwner();
+
+        if (documentOwner == null
+                || documentOwner.getId() == null
+                || !documentOwner.getId().equals(owner.getId())) {
+            auditLogService.recordPermissionChangeFailure(
+                    document,
+                    owner,
+                    "PERMISSION_GRANT", 
+                    "DENIED"
+            );
+
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Document not found.");
         }
 
         AppUser recipient = userRepository
@@ -78,14 +97,26 @@ public class DocumentPermissionService {
                 documentId, recipient.getId())
             .orElse(null);
 
-        if (permission == null) {
+        boolean isNewGrant = permission == null;
+
+        if (isNewGrant) {
             permission = new DocumentPermission(
                 document, recipient, permissionType, owner);
         } else {
             permission.setPermissionType(permissionType);
         }
 
-        return permissionRepository.save(permission);
+        DocumentPermission saved =
+                permissionRepository.saveAndFlush(permission);
+
+        auditLogService.recordPermissionChange(
+                document,
+                owner,
+                isNewGrant ? "PERMISSION_GRANT" : "PERMISSION_UPDATE",
+                "SUCCESS"
+        );
+
+        return saved;
     }
 
     @Transactional
@@ -99,15 +130,29 @@ public class DocumentPermissionService {
             .orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED, "User not found."));
 
-        Document document = documentRepository
-            .findByIdAndOwner_Id(documentId, owner.getId())
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND, "Document not found."));
-        
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Document not found."));
+
         if (document.isDeleted()) {
             throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Document not found.");
+                    HttpStatus.NOT_FOUND, "Document not found.");
+        }
+
+        AppUser documentOwner = document.getOwner();
+
+        if (documentOwner == null
+                || documentOwner.getId() == null
+                || !documentOwner.getId().equals(owner.getId())) {
+            auditLogService.recordPermissionChangeFailure(
+                    document,
+                    owner,
+                    "PERMISSION_REVOKE",
+                    "DENIED"
+            );
+
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Document not found.");
         }
 
         DocumentPermission permission = permissionRepository
@@ -116,6 +161,14 @@ public class DocumentPermissionService {
                 HttpStatus.NOT_FOUND, "Permission not found."));
 
         permissionRepository.delete(permission);
+        permissionRepository.flush();
+
+        auditLogService.recordPermissionChange(
+                document,
+                owner,
+                "PERMISSION_REVOKE",
+                "SUCCESS"
+        );
     }
     
     

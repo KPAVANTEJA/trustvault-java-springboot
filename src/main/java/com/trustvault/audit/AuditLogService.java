@@ -127,4 +127,38 @@ public class AuditLogService {
 
         auditIntegrityService.append(event);
     }
+    
+    @Transactional
+    public void recordPermissionChange(
+            Document document,
+            AppUser actor,
+            String action,
+            String outcome) {
+
+        AuditLog event = new AuditLog(
+                document,
+                actor,
+                action,
+                outcome
+        );
+
+        auditIntegrityService.append(event);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordPermissionChangeFailure(
+            Document document,
+            AppUser actor,
+            String action,
+            String outcome) {
+
+        AuditLog event = new AuditLog(
+                document,
+                actor,
+                action,
+                outcome
+        );
+
+        auditIntegrityService.append(event);
+    }
 }
