@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
 import com.trustvault.document.Document;
 import com.trustvault.document.DocumentRepository;
@@ -16,6 +17,9 @@ import com.trustvault.user.UserRole;
 import jakarta.transaction.Transactional;
 
 @SpringBootTest
+@TestPropertySource(properties = {
+	    "TRUSTVAULT_AUDIT_HMAC_KEY=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+	})
 class AuditIntegrityServiceTests {
 	
 	@Autowired
