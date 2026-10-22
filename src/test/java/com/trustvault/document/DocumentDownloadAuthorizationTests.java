@@ -503,6 +503,10 @@ void userWithEditPermissionCanReplaceDocumentContent()
         "text/plain",
         (long) content.length
     );
+    
+    verify(document).setContentSha256(
+    	    "a3be89a03562b5dc60bc2e5af28ff981cf287d60ee02ad1afebca7cbafc81189"
+    	);
 
     verify(documentRepository).saveAndFlush(document);
     verify(auditLogService).recordDocumentUpdate(document, editor);
