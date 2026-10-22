@@ -314,16 +314,24 @@ public ResponseEntity<Void> deleteDocument(
                     HttpStatus.UNAUTHORIZED,
                     "Authenticated user not found."));
 
-    Document document = documentRepository
-            .findByIdAndOwner_Id(id, user.getId())
+    Document document = documentRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Document not found."));
+                    HttpStatus.NOT_FOUND, "Document not found."));
 
     if (document.isDeleted()) {
         throw new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Document not found.");
+                HttpStatus.NOT_FOUND, "Document not found.");
+    }
+
+    boolean isOwner = document.getOwner().getId()
+            .equals(user.getId());
+
+    if (!isOwner) {
+        auditLogService.recordDeletionFailure(
+                document, user, "DENIED");
+
+        throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Document not found.");
     }
 
     document.setDeleted(true);

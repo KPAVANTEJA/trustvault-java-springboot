@@ -111,4 +111,20 @@ public class AuditLogService {
 
         auditIntegrityService.append(event);
     }
+    
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordDeletionFailure(
+            Document document,
+            AppUser user,
+            String outcome) {
+
+        AuditLog event = new AuditLog(
+                document,
+                user,
+                "DOCUMENT_DELETE",
+                outcome
+        );
+
+        auditIntegrityService.append(event);
+    }
 }
