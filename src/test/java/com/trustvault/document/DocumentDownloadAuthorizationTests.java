@@ -123,6 +123,8 @@ void viewerWithViewPermissionCanDownloadDocument() throws Exception {
         when(document.getOwner()).thenReturn(owner);
         when(document.getStorageKey()).thenReturn("test-storage-key");
         when(document.getContentType()).thenReturn("text/plain");
+        when(document.getContentSha256())
+        .thenReturn("8d430eb73472bd0177cf3cd165c9541c775a59f6871cf2a9e736e40584d24b78");
 
         when(permissionRepository.findByDocument_IdAndUser_Id(100L, 2L))
             .thenReturn(Optional.of(permission));
@@ -594,6 +596,8 @@ void revokedPermissionImmediatelyPreventsNextDownload()
     when(document.isDeleted()).thenReturn(false);
     when(document.getStorageKey()).thenReturn("revocation-test-key");
     when(document.getContentType()).thenReturn("text/plain");
+    when(document.getContentSha256())
+    .thenReturn("9a5736fd6959125e54440ffd943f934a2daf0cdc3632d314dd2f374a06e21092");
 
     DocumentPermission permission = mock(DocumentPermission.class);
     when(permission.getPermissionType()).thenReturn(PermissionType.VIEW);
@@ -640,5 +644,54 @@ void revokedPermissionImmediatelyPreventsNextDownload()
     }
 }
 
+
+@Test
+@WithMockUser(username = "viewer@example.com", roles = "VIEWER")
+void downloadRejectsFileWhoseContentsHaveChanged() throws Exception {
+    AppUser viewer = mock(AppUser.class);
+    AppUser owner = mock(AppUser.class);
+    Document document = mock(Document.class);
+    DocumentPermission permission = mock(DocumentPermission.class);
+
+    Path tempFile = Files.createTempFile("trustvault-tampered-", ".txt");
+
+    try {
+        // The stored file contains altered content.
+        Files.writeString(tempFile, "Modified document content");
+
+        when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
+            .thenReturn(Optional.of(viewer));
+        when(viewer.getId()).thenReturn(2L);
+        when(owner.getId()).thenReturn(1L);
+
+        when(documentRepository.findById(100L))
+            .thenReturn(Optional.of(document));
+        when(document.isDeleted()).thenReturn(false);
+        when(document.getOwner()).thenReturn(owner);
+        when(document.getStorageKey()).thenReturn("tampered-test-key");
+        when(document.getContentType()).thenReturn("text/plain");
+
+        // Fingerprint of the original "Test document content".
+        when(document.getContentSha256())
+            .thenReturn("9a5736fd6959125e54440ffd943f934a2daf0cdc3632d314dd2f374a06e21092");
+
+        when(permissionRepository.findByDocument_IdAndUser_Id(100L, 2L))
+            .thenReturn(Optional.of(permission));
+        when(permission.getPermissionType()).thenReturn(PermissionType.VIEW);
+
+        when(storageService.resolve("tampered-test-key"))
+            .thenReturn(tempFile);
+
+        mockMvc.perform(get("/api/documents/100/download"))
+            .andExpect(status().isInternalServerError());
+
+        verify(auditLogService).recordDownloadFailure(
+            document, viewer, "INTEGRITY_MISMATCH");
+
+        verify(auditLogService, never()).recordDownload(document, viewer);
+    } finally {
+        Files.deleteIfExists(tempFile);
+    }
+}
 
 }

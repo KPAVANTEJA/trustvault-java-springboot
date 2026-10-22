@@ -45,6 +45,8 @@ public class DocumentController {
     
     private final DocumentPermissionRepository permissionRepository;
     private final AuditLogService auditLogService;
+    private final FileContentValidator fileContentValidator;
+    private final DocumentContentHashService contentHashService;
     
     
 
@@ -53,12 +55,16 @@ public class DocumentController {
             AppUserRepository userRepository,
             DocumentStorageService storageService,
             DocumentPermissionRepository permissionRepository,
-            AuditLogService auditLogService) {
+            AuditLogService auditLogService,
+            FileContentValidator fileContentValidator,
+            DocumentContentHashService contentHashService) {
         this.documentRepository = documentRepository;
         this.userRepository = userRepository;
         this.storageService = storageService;
         this.permissionRepository = permissionRepository;
         this.auditLogService = auditLogService;
+        this.fileContentValidator = fileContentValidator;
+        this.contentHashService = contentHashService;
     }
 
     @PostMapping
@@ -140,6 +146,8 @@ public class DocumentController {
                 "File extension and content type do not match.");
         }
         
+        fileContentValidator.validate(file, expectedType);
+        
         //Validate Category
         if (category != null && category.trim().length() > 100) {
             throw new ResponseStatusException(
@@ -156,6 +164,8 @@ public class DocumentController {
         String storageKey = null;
 
         try {
+            String contentSha256 = contentHashService.sha256(file);
+
             storageKey = storageService.store(file);
 
             Document document = new Document(
@@ -167,6 +177,8 @@ public class DocumentController {
                 owner,
                 category
             );
+            
+            document.setContentSha256(contentSha256);
 
             document = documentRepository.saveAndFlush(document);
             
@@ -278,6 +290,37 @@ public ResponseEntity<Resource> downloadDocument(
     if (!Files.isRegularFile(filePath) || !Files.isReadable(filePath)) {
         throw new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "Document file not found.");
+    }
+    
+    String expectedHash = document.getContentSha256();
+
+    if (expectedHash == null || expectedHash.isBlank()) {
+        auditLogService.recordDownloadFailure(
+                document, user, "INTEGRITY_UNAVAILABLE");
+
+        throw new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Document integrity verification is unavailable.");
+    }
+
+    try {
+        String actualHash = contentHashService.sha256(filePath);
+
+        if (!actualHash.equalsIgnoreCase(expectedHash)) {
+            auditLogService.recordDownloadFailure(
+                    document, user, "INTEGRITY_MISMATCH");
+
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Document integrity verification failed.");
+        }
+    } catch (IOException ex) {
+        auditLogService.recordDownloadFailure(
+                document, user, "INTEGRITY_CHECK_ERROR");
+
+        throw new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Unable to verify document integrity.");
     }
 
     Resource resource = new FileSystemResource(filePath);
@@ -561,11 +604,16 @@ public Map<String, Object> replaceDocumentContent(
                 HttpStatus.BAD_REQUEST,
                 "File extension and content type do not match.");
     }
+    
+    fileContentValidator.validate(file, expectedType);
 
     String oldStorageKey = document.getStorageKey();
     String newStorageKey = null;
 
     try {
+        // Calculate the fingerprint of the replacement content.
+        String contentSha256 = contentHashService.sha256(file);
+
         // Store the new file without deleting the old one yet.
         newStorageKey = storageService.store(file);
 
@@ -574,6 +622,8 @@ public Map<String, Object> replaceDocumentContent(
                 newStorageKey,
                 expectedType,
                 file.getSize());
+        
+        document.setContentSha256(contentSha256);
 
         documentRepository.saveAndFlush(document);
 

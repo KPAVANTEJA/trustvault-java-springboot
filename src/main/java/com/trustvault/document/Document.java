@@ -40,6 +40,9 @@ public class Document {
 
     @Column(name = "SIZE_BYTES", nullable = false)
     private Long sizeBytes;
+    
+    @Column(name = "CONTENT_SHA256", length = 64)
+    private String contentSha256;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "OWNER_ID", nullable = false)
@@ -137,6 +140,15 @@ public class Document {
 
     public Long getSizeBytes() {
         return sizeBytes;
+        
+    }
+    
+    public String getContentSha256() {
+        return contentSha256;
+    }
+
+    public void setContentSha256(String contentSha256) {
+        this.contentSha256 = contentSha256;
     }
 
     public AppUser getOwner() {
