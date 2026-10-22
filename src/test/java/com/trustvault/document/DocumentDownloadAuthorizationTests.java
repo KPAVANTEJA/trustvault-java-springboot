@@ -31,7 +31,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -544,6 +543,73 @@ void viewerListingAndSearchUseOnlySharedDocuments()
     verify(documentRepository, never())
         .findByOwner_RoleAndDeletedFalseOrderByCreatedAtDesc(
             UserRole.ADMIN);
+}
+
+
+@Test
+@WithMockUser(
+    username = "viewer@example.com",
+    roles = "VIEWER"
+)
+void revokedPermissionImmediatelyPreventsNextDownload()
+        throws Exception {
+
+    AppUser viewer = mock(AppUser.class);
+    when(viewer.getId()).thenReturn(2L);
+
+    AppUser owner = mock(AppUser.class);
+    when(owner.getId()).thenReturn(1L);
+
+    Document document = mock(Document.class);
+    when(document.getId()).thenReturn(100L);
+    when(document.getOwner()).thenReturn(owner);
+    when(document.isDeleted()).thenReturn(false);
+    when(document.getStorageKey()).thenReturn("revocation-test-key");
+    when(document.getContentType()).thenReturn("text/plain");
+
+    DocumentPermission permission = mock(DocumentPermission.class);
+    when(permission.getPermissionType()).thenReturn(PermissionType.VIEW);
+
+    when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
+        .thenReturn(Optional.of(viewer));
+
+    when(documentRepository.findById(100L))
+        .thenReturn(Optional.of(document));
+
+    // First request has permission; second request sees revoked access.
+    when(permissionRepository.findByDocument_IdAndUser_Id(100L, 2L))
+            .thenReturn(Optional.of(permission))
+            .thenReturn(Optional.empty());
+
+    java.nio.file.Path tempFile =
+        java.nio.file.Files.createTempFile(
+            "trustvault-revocation-", ".txt");
+
+    try {
+        java.nio.file.Files.writeString(tempFile, "Test document content");
+
+        when(storageService.resolve("revocation-test-key"))
+            .thenReturn(tempFile);
+
+        // Access succeeds before revocation.
+        mockMvc.perform(get("/api/documents/100/download"))
+            .andExpect(status().isOk());
+
+        // The very next request is denied.
+        mockMvc.perform(get("/api/documents/100/download"))
+            .andExpect(status().isNotFound());
+
+        verify(auditLogService).recordDownload(document, viewer);
+
+        verify(auditLogService).recordDownloadFailure(
+            document, viewer, "DENIED");
+
+        verify(permissionRepository, times(2))
+            .findByDocument_IdAndUser_Id(100L, 2L);
+
+    } finally {
+        java.nio.file.Files.deleteIfExists(tempFile);
+    }
 }
 
 }
