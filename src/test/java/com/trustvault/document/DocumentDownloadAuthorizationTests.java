@@ -9,6 +9,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.util.Optional;
 
@@ -295,6 +296,62 @@ void viewerWithViewPermissionCannotEditDocument() throws Exception {
 
     verify(documentRepository, never())
         .saveAndFlush(any(Document.class));
+}
+
+@Test
+@WithMockUser(
+    username = "editor@example.com",
+    roles = "VIEWER"
+)
+void userWithEditPermissionCanUpdateDocumentMetadata()
+        throws Exception {
+
+    AppUser editor = mock(AppUser.class);
+    when(editor.getId()).thenReturn(2L);
+
+    AppUser owner = mock(AppUser.class);
+    when(owner.getId()).thenReturn(1L);
+    when(owner.getEmail()).thenReturn("owner@example.com");
+
+    Document document = mock(Document.class);
+    when(document.getId()).thenReturn(100L);
+    when(document.getOwner()).thenReturn(owner);
+    when(document.isDeleted()).thenReturn(false);
+    when(document.getTitle()).thenReturn("Updated Contract");
+    when(document.getCategory()).thenReturn("Contracts");
+    when(document.getOriginalFilename()).thenReturn("contract.txt");
+
+    DocumentPermission permission = mock(DocumentPermission.class);
+    when(permission.getPermissionType()).thenReturn(PermissionType.EDIT);
+
+    when(userRepository.findByEmailIgnoreCase("editor@example.com"))
+        .thenReturn(Optional.of(editor));
+
+    when(documentRepository.findById(100L))
+        .thenReturn(Optional.of(document));
+
+    when(permissionRepository.findByDocument_IdAndUser_Id(100L, 2L))
+        .thenReturn(Optional.of(permission));
+
+    when(documentRepository.saveAndFlush(document))
+        .thenReturn(document);
+
+    mockMvc.perform(put("/api/documents/100")
+            .with(csrf())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                    "title": "Updated Contract",
+                    "category": "Contracts"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.title").value("Updated Contract"))
+        .andExpect(jsonPath("$.category").value("Contracts"));
+
+    verify(document).updateMetadata("Updated Contract", "Contracts");
+    verify(documentRepository).saveAndFlush(document);
+    verify(auditLogService).recordDocumentUpdate(document, editor);
 }
 
 }
