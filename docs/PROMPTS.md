@@ -184,6 +184,21 @@ This file records AI assistance, identified mistakes or limitations, corrective 
 
 **Evidence commit:** Not yet available.
 
+## Entry 14 — 2026-10-22 — Expanding Authorization and Audit Test Coverage
+
+**Prompt or request summary:** Expand TrustVault's automated security tests to cover cross-user document access, VIEW-versus-EDIT boundaries, immediate permission revocation, unauthorized uploads, document visibility, permission grants and revocations, and audit recording of denied operations.
+
+**AI output:** Suggested controller tests using Spring MockMvc, service-level tests using Mockito, database-backed visibility tests, and integration tests that verify permission-change audit records and HMAC hashes.
+
+**What was wrong or incomplete:** Some suggested test code contained unnecessary Mockito stubbings and mismatched the repository method used by the updated service. A mixture of Spring-managed `@MockitoBean` dependencies and Mockito's `@InjectMocks` in an integration-test class also created avoidable test-setup complexity. The test failures showed that suggested code needed to be checked against the actual repository and controller implementation rather than accepted unchanged.
+
+**Corrective action:** Separate service unit tests from Spring integration tests, stub the repository method actually used by the implementation, initialize mocked document ownership correctly, and remove stubbings that the relevant request path does not use. Keep Mockito strictness enabled; do not hide test problems with `lenient()`.
+
+**Verification status:** Several authorization and audit test groups have been reported passing. The latest `DocumentDownloadAuthorizationTests` cleanup must be rerun before recording the full Maven suite as passing. Do not claim that the remaining corrections are complete until the focused tests and complete suite pass.
+
+**Evidence commit:** Not yet available.
+
+
 ## Logging Rules
 
 - Keep entries tied to actual AI-assisted work. Do not invent prompts, AI outputs, corrections, or test results.
@@ -191,3 +206,13 @@ This file records AI assistance, identified mistakes or limitations, corrective 
 - Link relevant commits where available; never invent commit hashes or GitHub links.
 - Distinguish proposed, implemented, manually tested, and automated-test-verified controls.
 - Record known limitations and update earlier entries when later work changes the implementation.
+
+## 2026-10-22 — Add SHA-256 document integrity verification
+
+- **Prompt:** Implement file integrity verification in TrustVault incrementally, covering upload, content replacement, download verification, and regression tests. Preserve existing authorization and audit behavior.
+- **AI output:** Introduced `DocumentContentHashService` to calculate SHA-256 fingerprints, added the `contentSha256` field to `Document`, integrated hashing into upload and content replacement, and added a fingerprint comparison before downloads.
+- **Specific issue found:** Two existing download tests began returning HTTP 500 because their mocked documents did not provide the expected fingerprints. Existing active database records also lacked fingerprints.
+- **My correction and verification:** Updated the test fixtures with fingerprints matching their temporary file contents. Added a regression test for altered stored content. Added the `CONTENT_SHA256` column to Oracle and generated a local SQL backfill from the current stored files for existing documents. Updated `THREATS.md` to describe the implementation and its limitations.
+- **Tests:** `viewerWithViewPermissionCanDownloadDocument` passed; `revokedPermissionImmediatelyPreventsNextDownload` passed; `downloadRejectsFileWhoseContentsHaveChanged` passed; the complete `mvn test` suite reported `BUILD SUCCESS` on 2026-10-22.
+- **Integrity limitation:** Backfilling hashes establishes a baseline from the files' current contents; it does not prove their historical integrity. SHA-256 comparison does not provide malware scanning or protection against an attacker who can change both the file and its trusted database fingerprint.
+- **Fix commit:** Pending — record the actual commit hash or repository link after committing these changes.
