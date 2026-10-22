@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 import java.util.Optional;
 
@@ -164,6 +165,35 @@ void viewerCannotEditAnotherUsersDocument() throws Exception {
 
     verify(documentRepository, never())
         .saveAndFlush(any(Document.class));
+}
+
+
+@Test
+@WithMockUser(
+    username = "owner2@example.com",
+    roles = "OWNER"
+)
+void ownerCannotDeleteAnotherUsersDocument() throws Exception {
+
+    AppUser requester = mock(AppUser.class);
+    when(requester.getId()).thenReturn(2L);
+
+    when(userRepository.findByEmailIgnoreCase("owner2@example.com"))
+        .thenReturn(Optional.of(requester));
+
+    // Document 100 belongs to another user.
+    when(documentRepository.findByIdAndOwner_Id(100L, 2L))
+        .thenReturn(Optional.empty());
+
+    mockMvc.perform(delete("/api/documents/100")
+            .with(csrf()))
+        .andExpect(status().isNotFound());
+
+    // Confirm no file is deleted and no deletion is audited as successful.
+    verify(storageService, never()).deleteQuietly(anyString());
+
+    verify(auditLogService, never())
+        .recordDeletion(any(Document.class), any(AppUser.class));
 }
 
 }
