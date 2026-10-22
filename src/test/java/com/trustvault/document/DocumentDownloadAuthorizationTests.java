@@ -2,8 +2,11 @@
 package com.trustvault.document;
 
 import static org.mockito.Mockito.*;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.util.Optional;
 
@@ -22,6 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -114,6 +118,52 @@ void viewerWithViewPermissionCanDownloadDocument() throws Exception {
     } finally {
         Files.deleteIfExists(tempFile);
     }
+}
+
+
+@Test
+@WithMockUser(
+    username = "viewer@example.com",
+    roles = "VIEWER"
+)
+void viewerCannotEditAnotherUsersDocument() throws Exception {
+
+    AppUser viewer = mock(AppUser.class);
+    when(viewer.getId()).thenReturn(2L);
+
+    AppUser owner = mock(AppUser.class);
+    when(owner.getId()).thenReturn(1L);
+
+    Document document = mock(Document.class);
+    when(document.getId()).thenReturn(100L);
+    when(document.getOwner()).thenReturn(owner);
+    when(document.isDeleted()).thenReturn(false);
+
+    when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
+        .thenReturn(Optional.of(viewer));
+
+    when(documentRepository.findById(100L))
+        .thenReturn(Optional.of(document));
+
+    when(permissionRepository.findByDocument_IdAndUser_Id(100L, 2L))
+        .thenReturn(Optional.empty());
+
+    mockMvc.perform(put("/api/documents/100")
+            .with(csrf())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                    "title": "Unauthorized change"
+                }
+                """))
+        .andExpect(status().isNotFound());
+
+    verify(auditLogService).recordDocumentUpdateFailure(
+        document, viewer, "DENIED"
+    );
+
+    verify(documentRepository, never())
+        .saveAndFlush(any(Document.class));
 }
 
 }
