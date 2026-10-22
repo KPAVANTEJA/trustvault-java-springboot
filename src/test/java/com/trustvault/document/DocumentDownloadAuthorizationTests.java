@@ -354,4 +354,55 @@ void userWithEditPermissionCanUpdateDocumentMetadata()
     verify(auditLogService).recordDocumentUpdate(document, editor);
 }
 
+@Test
+@WithMockUser(
+    username = "viewer@example.com",
+    roles = "VIEWER"
+)
+void viewerWithViewPermissionCannotReplaceDocumentContent()
+        throws Exception {
+
+    AppUser viewer = mock(AppUser.class);
+    when(viewer.getId()).thenReturn(2L);
+
+    AppUser owner = mock(AppUser.class);
+    when(owner.getId()).thenReturn(1L);
+
+    Document document = mock(Document.class);
+    when(document.getId()).thenReturn(100L);
+    when(document.getOwner()).thenReturn(owner);
+    when(document.isDeleted()).thenReturn(false);
+
+    DocumentPermission permission = mock(DocumentPermission.class);
+    when(permission.getPermissionType()).thenReturn(PermissionType.VIEW);
+
+    when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
+        .thenReturn(Optional.of(viewer));
+
+    when(documentRepository.findById(100L))
+        .thenReturn(Optional.of(document));
+
+    when(permissionRepository.findByDocument_IdAndUser_Id(100L, 2L))
+        .thenReturn(Optional.of(permission));
+
+    MockMultipartFile replacement = new MockMultipartFile(
+        "file",
+        "replacement.txt",
+        "text/plain",
+        "replacement content".getBytes(
+            java.nio.charset.StandardCharsets.UTF_8)
+    );
+
+    mockMvc.perform(multipart("/api/documents/100/content")
+            .file(replacement)
+            .with(csrf()))
+        .andExpect(status().isNotFound());
+
+    verify(auditLogService).recordDocumentUpdateFailure(
+        document, viewer, "DENIED"
+    );
+
+    verify(storageService, never()).store(any(MultipartFile.class));
+}
+
 }
