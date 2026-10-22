@@ -405,4 +405,75 @@ void viewerWithViewPermissionCannotReplaceDocumentContent()
     verify(storageService, never()).store(any(MultipartFile.class));
 }
 
+@Test
+@WithMockUser(
+    username = "editor@example.com",
+    roles = "VIEWER"
+)
+void userWithEditPermissionCanReplaceDocumentContent()
+        throws Exception {
+
+    AppUser editor = mock(AppUser.class);
+    when(editor.getId()).thenReturn(2L);
+
+    AppUser owner = mock(AppUser.class);
+    when(owner.getId()).thenReturn(1L);
+
+    Document document = mock(Document.class);
+    when(document.getId()).thenReturn(100L);
+    when(document.getOwner()).thenReturn(owner);
+    when(document.isDeleted()).thenReturn(false);
+    when(document.getStorageKey()).thenReturn("old-storage-key");
+    when(document.getTitle()).thenReturn("Test Contract");
+    when(document.getCategory()).thenReturn("Contracts");
+    when(document.getOriginalFilename()).thenReturn("replacement.txt");
+    when(document.getSizeBytes()).thenReturn(19L);
+
+    DocumentPermission permission = mock(DocumentPermission.class);
+    when(permission.getPermissionType()).thenReturn(PermissionType.EDIT);
+
+    when(userRepository.findByEmailIgnoreCase("editor@example.com"))
+        .thenReturn(Optional.of(editor));
+
+    when(documentRepository.findById(100L))
+        .thenReturn(Optional.of(document));
+
+    when(permissionRepository.findByDocument_IdAndUser_Id(100L, 2L))
+        .thenReturn(Optional.of(permission));
+
+    byte[] content = "replacement content".getBytes(
+        java.nio.charset.StandardCharsets.UTF_8);
+
+    MockMultipartFile replacement = new MockMultipartFile(
+        "file",
+        "replacement.txt",
+        "text/plain",
+        content
+    );
+
+    when(storageService.store(any(MultipartFile.class)))
+        .thenReturn("new-storage-key");
+
+    when(documentRepository.saveAndFlush(document))
+        .thenReturn(document);
+
+    mockMvc.perform(multipart("/api/documents/100/content")
+            .file(replacement)
+            .with(csrf()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.filename").value("replacement.txt"))
+        .andExpect(jsonPath("$.message")
+            .value("Document content replaced successfully."));
+
+    verify(document).replaceStoredFile(
+        "replacement.txt",
+        "new-storage-key",
+        "text/plain",
+        (long) content.length
+    );
+
+    verify(documentRepository).saveAndFlush(document);
+    verify(auditLogService).recordDocumentUpdate(document, editor);
+}
+
 }
