@@ -476,4 +476,33 @@ void userWithEditPermissionCanReplaceDocumentContent()
     verify(auditLogService).recordDocumentUpdate(document, editor);
 }
 
+@Test
+@WithMockUser(
+    username = "viewer@example.com",
+    roles = "VIEWER"
+)
+void viewerCannotUploadDocuments() throws Exception {
+
+    MockMultipartFile file = new MockMultipartFile(
+        "file",
+        "blocked.txt",
+        "text/plain",
+        "viewer upload attempt".getBytes(
+            java.nio.charset.StandardCharsets.UTF_8)
+    );
+
+    mockMvc.perform(multipart("/api/documents")
+            .file(file)
+            .param("title", "Unauthorized Upload")
+            .param("category", "Reports")
+            .with(csrf()))
+        .andExpect(status().isForbidden());
+
+    verify(storageService, never())
+        .store(any(MultipartFile.class));
+
+    verify(documentRepository, never())
+        .saveAndFlush(any(Document.class));
+}
+
 }
