@@ -27,18 +27,25 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 	boolean existsByIdGreaterThanAndEventHashIsNull(Long id);
 	
 
-@Query("""
-    SELECT new com.trustvault.audit.AuditLogResponse(
-        a.id,
-        a.document.id,
-        a.user.id,
-        a.action,
-        a.outcome,
-        a.eventTime
-    )
-    FROM AuditLog a
-    ORDER BY a.eventTime DESC
-    """)
-Page<AuditLogResponse> findRecentAuditLogs(Pageable pageable);
+	@Query("""
+		    SELECT new com.trustvault.audit.AuditLogResponse(
+		        a.id,
+		        a.document.id,
+		        a.document.title,
+		        a.user.id,
+		        a.user.email,
+		        a.user.fullName,
+		        a.action,
+		        a.outcome,
+		        a.eventTime,
+		        a.targetUserId,
+		        a.targetUserEmail,
+		        a.previousPermissionType,
+		        a.newPermissionType
+		    )
+		    FROM AuditLog a
+		    ORDER BY a.eventTime DESC
+		    """)
+		Page<AuditLogResponse> findRecentAuditLogs(Pageable pageable);
 
 }

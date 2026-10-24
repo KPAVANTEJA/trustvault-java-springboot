@@ -38,6 +38,33 @@ public class AuditLogService {
         auditIntegrityService.append(event);
     }
     
+    @Transactional
+    public void recordView(Document document, AppUser user) {
+        AuditLog event = new AuditLog(
+            document,
+            user,
+            "DOCUMENT_VIEW",
+            "SUCCESS"
+        );
+
+        auditIntegrityService.append(event);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordViewFailure(
+            Document document,
+            AppUser user,
+            String outcome) {
+
+        AuditLog event = new AuditLog(
+            document,
+            user,
+            "DOCUMENT_VIEW",
+            outcome
+        );
+
+        auditIntegrityService.append(event);
+    }
     
     @Transactional
     public void recordUpload(Document document, AppUser user) {
@@ -144,6 +171,34 @@ public class AuditLogService {
 
         auditIntegrityService.append(event);
     }
+    
+
+@Transactional
+public void recordPermissionChange(
+        Document document,
+        AppUser actor,
+        Long targetUserId,
+        String targetUserEmail,
+        String previousPermissionType,
+        String newPermissionType,
+        String action,
+        String outcome) {
+
+    AuditLog event = new AuditLog(
+            document,
+            actor,
+            action,
+            outcome
+    );
+
+    event.setTargetUserId(targetUserId);
+    event.setTargetUserEmail(targetUserEmail);
+    event.setPreviousPermissionType(previousPermissionType);
+    event.setNewPermissionType(newPermissionType);
+
+    auditIntegrityService.append(event);
+}
+
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordPermissionChangeFailure(
@@ -158,6 +213,32 @@ public class AuditLogService {
                 action,
                 outcome
         );
+
+        auditIntegrityService.append(event);
+    }
+    
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordPermissionChangeFailure(
+            Document document,
+            AppUser actor,
+            Long targetUserId,
+            String targetUserEmail,
+            String previousPermissionType,
+            String newPermissionType,
+            String action,
+            String outcome) {
+
+        AuditLog event = new AuditLog(
+                document,
+                actor,
+                action,
+                outcome
+        );
+
+        event.setTargetUserId(targetUserId);
+        event.setTargetUserEmail(targetUserEmail);
+        event.setPreviousPermissionType(previousPermissionType);
+        event.setNewPermissionType(newPermissionType);
 
         auditIntegrityService.append(event);
     }

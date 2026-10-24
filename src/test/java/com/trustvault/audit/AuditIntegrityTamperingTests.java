@@ -116,6 +116,90 @@ class AuditIntegrityTamperingTests {
                 IllegalStateException.class,
                 () -> auditIntegrityService.verifyIntegrity());
     }
+    
+    
+    @Test
+    @Transactional
+    void detectsModifiedPermissionRecipientMetadata() {
+        AuditLog event = createPermissionMetadataEvent();
+
+        // Verify the newly created event before tampering.
+        auditIntegrityService.verifyIntegrity();
+
+        jdbcTemplate.update(
+                "UPDATE TV_AUDIT_LOGS SET TARGET_USER_EMAIL = ? WHERE ID = ?",
+                "tampered@example.com",
+                event.getId());
+
+        entityManager.clear();
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> auditIntegrityService.verifyIntegrity());
+    }
+
+    @Test
+    @Transactional
+    void detectsModifiedPermissionTypeMetadata() {
+        AuditLog event = createPermissionMetadataEvent();
+
+        // Verify the newly created event before tampering.
+        auditIntegrityService.verifyIntegrity();
+
+        jdbcTemplate.update(
+                "UPDATE TV_AUDIT_LOGS SET NEW_PERMISSION_TYPE = ? WHERE ID = ?",
+                "EDIT",
+                event.getId());
+
+        entityManager.clear();
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> auditIntegrityService.verifyIntegrity());
+    }
+    
+    private AuditLog createPermissionMetadataEvent() {
+        String suffix = UUID.randomUUID().toString();
+
+        AppUser actor = userRepository.saveAndFlush(
+                new AppUser(
+                        "audit-actor-" + suffix + "@example.com",
+                        "Audit Actor",
+                        "test-password-hash",
+                        UserRole.OWNER));
+
+        AppUser recipient = userRepository.saveAndFlush(
+                new AppUser(
+                        "audit-recipient-" + suffix + "@example.com",
+                        "Audit Recipient",
+                        "test-password-hash",
+                        UserRole.VIEWER));
+
+        Document document = documentRepository.saveAndFlush(
+                new Document(
+                        "Permission Audit " + suffix,
+                        "permission-audit.txt",
+                        suffix,
+                        "text/plain",
+                        1L,
+                        actor,
+                        "Tests"));
+
+        AuditLog event = new AuditLog(
+                document,
+                actor,
+                "PERMISSION_GRANT",
+                "SUCCESS");
+
+        event.setTargetUserId(recipient.getId());
+        event.setTargetUserEmail(recipient.getEmail());
+        event.setPreviousPermissionType(null);
+        event.setNewPermissionType("VIEW");
+
+        auditIntegrityService.append(event);
+
+        return event;
+    }
 
     private AuditLog createTestEvent(String action) {
         String suffix = UUID.randomUUID().toString();

@@ -228,12 +228,62 @@ public class AuditIntegrityService {
         }
     }
 
-    private String calculateEventHash(AuditLog event) {
 
-        Mac mac = newMac();
+private String calculateEventHash(AuditLog event) {
 
-        updateField(mac, "TRUSTVAULT_EVENT_V1");
-        updateField(mac, event.getPreviousHash());
+    Mac mac = newMac();
+
+    boolean hasPermissionMetadata =
+            event.getTargetUserId() != null
+            || event.getTargetUserEmail() != null
+            || event.getPreviousPermissionType() != null
+            || event.getNewPermissionType() != null;
+
+    // Preserve the original calculation for existing events.
+    // Use V2 when permission-change metadata is present.
+    updateField(mac, hasPermissionMetadata
+            ? "TRUSTVAULT_EVENT_V2"
+            : "TRUSTVAULT_EVENT_V1");
+
+    updateField(mac, event.getPreviousHash());
+    updateField(mac, valueOf(event.getId()));
+    updateField(mac, valueOf(event.getDocument().getId()));
+    updateField(mac, valueOf(event.getUser().getId()));
+    updateField(mac, event.getAction());
+    updateField(mac, event.getOutcome());
+    updateField(mac, event.getEventTime() == null
+            ? null : event.getEventTime().toString());
+
+    if (hasPermissionMetadata) {
+        updateField(mac, valueOf(event.getTargetUserId()));
+        updateField(mac, event.getTargetUserEmail());
+        updateField(mac, event.getPreviousPermissionType());
+        updateField(mac, event.getNewPermissionType());
+    }
+
+    return HexFormat.of().formatHex(mac.doFinal());
+}
+
+
+private String calculateHistoricalBaseline(List<AuditLog> records) {
+
+    Mac mac = newMac();
+
+    // Keep the original baseline format when no permission metadata exists.
+    // This preserves compatibility with existing historical baselines.
+    boolean hasPermissionMetadata = records.stream().anyMatch(event ->
+            event.getTargetUserId() != null
+            || event.getTargetUserEmail() != null
+            || event.getPreviousPermissionType() != null
+            || event.getNewPermissionType() != null);
+
+    updateField(mac, hasPermissionMetadata
+            ? "TRUSTVAULT_HISTORICAL_BASELINE_V2"
+            : "TRUSTVAULT_HISTORICAL_BASELINE_V1");
+
+    updateField(mac, Integer.toString(records.size()));
+
+    for (AuditLog event : records) {
         updateField(mac, valueOf(event.getId()));
         updateField(mac, valueOf(event.getDocument().getId()));
         updateField(mac, valueOf(event.getUser().getId()));
@@ -241,31 +291,20 @@ public class AuditIntegrityService {
         updateField(mac, event.getOutcome());
         updateField(mac, event.getEventTime() == null
                 ? null : event.getEventTime().toString());
+        updateField(mac, event.getPreviousHash());
+        updateField(mac, event.getEventHash());
 
-        return HexFormat.of().formatHex(mac.doFinal());
-    }
-
-    private String calculateHistoricalBaseline(List<AuditLog> records) {
-
-        Mac mac = newMac();
-
-        updateField(mac, "TRUSTVAULT_HISTORICAL_BASELINE_V1");
-        updateField(mac, Integer.toString(records.size()));
-
-        for (AuditLog event : records) {
-            updateField(mac, valueOf(event.getId()));
-            updateField(mac, valueOf(event.getDocument().getId()));
-            updateField(mac, valueOf(event.getUser().getId()));
-            updateField(mac, event.getAction());
-            updateField(mac, event.getOutcome());
-            updateField(mac, event.getEventTime() == null
-                    ? null : event.getEventTime().toString());
-            updateField(mac, event.getPreviousHash());
-            updateField(mac, event.getEventHash());
+        // V2 protects permission metadata for historical records.
+        if (hasPermissionMetadata) {
+            updateField(mac, valueOf(event.getTargetUserId()));
+            updateField(mac, event.getTargetUserEmail());
+            updateField(mac, event.getPreviousPermissionType());
+            updateField(mac, event.getNewPermissionType());
         }
-
-        return HexFormat.of().formatHex(mac.doFinal());
     }
+
+    return HexFormat.of().formatHex(mac.doFinal());
+}
 
     private String calculateCheckpoint(AuditChainHead head) {
 

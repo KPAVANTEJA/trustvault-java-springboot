@@ -45,7 +45,7 @@ public class AuditLog {
     @Column(name = "ACTION", nullable = false, length = 50)
     private String action;
 
-    @Column(name = "OUTCOME", nullable = false, length = 20)
+    @Column(name = "OUTCOME", nullable = false, length = 32)
     private String outcome;
 
     @Column(name = "EVENT_TIME", nullable = false, updatable = false)
@@ -56,6 +56,20 @@ public class AuditLog {
 
     @Column(name = "EVENT_HASH", length = 64)
     private String eventHash;
+    
+ // Snapshot of the user affected by a permission change.
+ // No foreign key: historical evidence must survive user deletion.
+ @Column(name = "TARGET_USER_ID")
+ private Long targetUserId;
+
+ @Column(name = "TARGET_USER_EMAIL", length = 320)
+ private String targetUserEmail;
+
+ @Column(name = "PREVIOUS_PERMISSION_TYPE", length = 20)
+ private String previousPermissionType;
+
+ @Column(name = "NEW_PERMISSION_TYPE", length = 20)
+ private String newPermissionType;
 
     protected AuditLog() {
     }
@@ -117,5 +131,37 @@ public class AuditLog {
 
     public LocalDateTime getEventTime() {
         return eventTime;
+    }
+    
+    public Long getTargetUserId() {
+        return targetUserId;
+    }
+
+    public void setTargetUserId(Long targetUserId) {
+        this.targetUserId = targetUserId;
+    }
+
+    public String getTargetUserEmail() {
+        return targetUserEmail;
+    }
+
+    public void setTargetUserEmail(String targetUserEmail) {
+        this.targetUserEmail = targetUserEmail;
+    }
+
+    public String getPreviousPermissionType() {
+        return previousPermissionType;
+    }
+
+    public void setPreviousPermissionType(String previousPermissionType) {
+        this.previousPermissionType = previousPermissionType;
+    }
+
+    public String getNewPermissionType() {
+        return newPermissionType;
+    }
+
+    public void setNewPermissionType(String newPermissionType) {
+        this.newPermissionType = newPermissionType;
     }
 }

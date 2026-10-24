@@ -1,6 +1,8 @@
 
 package com.trustvault.audit;
 
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,9 +19,12 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuditLogController {
 
     private final AuditLogService auditLogService;
+    private final AuditIntegrityService auditIntegrityService;
 
-    public AuditLogController(AuditLogService auditLogService) {
+    public AuditLogController(AuditLogService auditLogService,
+            AuditIntegrityService auditIntegrityService) {
         this.auditLogService = auditLogService;
+        this.auditIntegrityService = auditIntegrityService;
     }
 
     @GetMapping
@@ -38,5 +43,22 @@ public class AuditLogController {
         Pageable pageable = PageRequest.of(page, size);
 
         return auditLogService.getRecentAuditLogs(pageable);
+    }
+
+    @GetMapping("/integrity")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Map<String, Object> verifyIntegrity() {
+        try {
+            auditIntegrityService.verifyIntegrity();
+            return Map.of(
+                "status", "OK",
+                "message", "Audit chain integrity verified successfully."
+            );
+        } catch (IllegalStateException ex) {
+            return Map.of(
+                "status", "FAILED",
+                "message", ex.getMessage()
+            );
+        }
     }
 }
