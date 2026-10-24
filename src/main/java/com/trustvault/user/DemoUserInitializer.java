@@ -32,56 +32,41 @@ public class DemoUserInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
 
-        String[] keys = {
-            "TRUSTVAULT_ADMIN_EMAIL",
-            "TRUSTVAULT_ADMIN_PASSWORD",
-            "TRUSTVAULT_OWNER_EMAIL",
-            "TRUSTVAULT_OWNER_PASSWORD",
-            "TRUSTVAULT_VIEWER_EMAIL",
-            "TRUSTVAULT_VIEWER_PASSWORD"
-        };
+        String adminEmail = environment.getProperty("TRUSTVAULT_ADMIN_EMAIL");
+        String adminPassword = environment.getProperty("TRUSTVAULT_ADMIN_PASSWORD");
 
-        String[] values = Arrays.stream(keys)
-            .map(environment::getProperty)
-            .toArray(String[]::new);
+        String ownerEmail = environment.getProperty("TRUSTVAULT_OWNER_EMAIL");
+        String ownerPassword = environment.getProperty("TRUSTVAULT_OWNER_PASSWORD");
 
-        boolean noneConfigured = Arrays.stream(values)
-            .allMatch(value -> value == null || value.isBlank());
+        String viewerEmail = environment.getProperty("TRUSTVAULT_VIEWER_EMAIL");
+        String viewerPassword = environment.getProperty("TRUSTVAULT_VIEWER_PASSWORD");
 
-        if (noneConfigured) {
-            log.warn("Initial accounts were not created. Configure the "
-                + "six TRUSTVAULT_* environment variables.");
-            return;
-        }
+        // Use standard demo credentials if not explicitly configured in environment
+        if (adminEmail == null || adminEmail.isBlank()) adminEmail = "admin@trustvault.local";
+        if (adminPassword == null || adminPassword.isBlank()) adminPassword = "admin123456!";
 
-        boolean incomplete = Arrays.stream(values)
-            .anyMatch(value -> value == null || value.isBlank());
+        if (ownerEmail == null || ownerEmail.isBlank()) ownerEmail = "owner@trustvault.local";
+        if (ownerPassword == null || ownerPassword.isBlank()) ownerPassword = "owner123456!";
 
-        if (incomplete) {
+        if (viewerEmail == null || viewerEmail.isBlank()) viewerEmail = "viewer@trustvault.local";
+        if (viewerPassword == null || viewerPassword.isBlank()) viewerPassword = "viewer123456!";
+
+        if (adminPassword.length() < 12 || ownerPassword.length() < 12 || viewerPassword.length() < 12) {
             throw new IllegalStateException(
-                "Configure all six TRUSTVAULT_* initial-account "
-                + "environment variables.");
-        }
-
-        for (int i = 1; i < values.length; i += 2) {
-            if (values[i].length() < 12) {
-                throw new IllegalStateException(
-                    "Each initial account password must be at least "
-                    + "12 characters.");
-            }
+                "Each initial account password must be at least 12 characters.");
         }
 
         createIfMissing(
-            values[0], "Docurithm Administrator",
-            values[1], UserRole.ADMIN);
+            adminEmail, "Docurithm Administrator",
+            adminPassword, UserRole.ADMIN);
 
         createIfMissing(
-            values[2], "Docurithm Document Owner",
-            values[3], UserRole.OWNER);
+            ownerEmail, "Docurithm Document Owner",
+            ownerPassword, UserRole.OWNER);
 
         createIfMissing(
-            values[4], "Docurithm Viewer",
-            values[5], UserRole.VIEWER);
+            viewerEmail, "Docurithm Viewer",
+            viewerPassword, UserRole.VIEWER);
     }
 
     private void createIfMissing(

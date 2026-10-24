@@ -252,7 +252,7 @@ public class DocumentController {
                 boolean isOwnerDoc = document.getOwner().getId().equals(user.getId());
                 boolean isAdmin = user.getRole() == UserRole.ADMIN;
                 item.put("isOwner", isOwnerDoc || isAdmin);
-                boolean canEdit = isOwnerDoc || isAdmin;
+                boolean canEdit = isOwnerDoc;
                 if (!canEdit) {
                     canEdit = permissionRepository
                             .findByDocument_IdAndUser_Id(document.getId(), user.getId())
@@ -528,7 +528,7 @@ public ResponseEntity<Resource> downloadDocument(
             .header("X-Content-Type-Options", "nosniff")
             .header(
                     HttpHeaders.CONTENT_DISPOSITION,
-                    "attachment; filename=\"document-" + document.getId() + "\"")
+                    "attachment; filename=\"" + (document.getOriginalFilename() != null && !document.getOriginalFilename().isBlank() ? document.getOriginalFilename().replace("\"", "") : ("document-" + document.getId())) + "\"")
             .body(resource);
 }
 
@@ -933,7 +933,7 @@ public List<Map<String, Object>> searchDocuments(
                 boolean isAdmin = user.getRole() == UserRole.ADMIN;
                 result.put("isOwner", isOwnerDoc || isAdmin);
                 // Check if user has EDIT permission on this document
-                boolean canEdit = isOwnerDoc || isAdmin;
+                boolean canEdit = isOwnerDoc;
                 if (!canEdit) {
                     canEdit = permissionRepository
                             .findByDocument_IdAndUser_Id(d.getId(), user.getId())

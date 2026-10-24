@@ -329,6 +329,24 @@
                 </button>
             </form>
 
+            <div class="demo-accounts">
+                <div class="demo-accounts-title">
+                    <span>⚡ Demo Accounts</span>
+                    <span style="font-size: 10px; color: #4ffe9c;">Click to quick-fill</span>
+                </div>
+                <div class="demo-chips">
+                    <button type="button" class="demo-chip" id="demo-admin" onclick="fillCredentials('admin@trustvault.local', 'admin123456!')" title="Sign in as Administrator">
+                        🛡️ ADMIN
+                    </button>
+                    <button type="button" class="demo-chip" id="demo-owner" onclick="fillCredentials('owner@trustvault.local', 'owner123456!')" title="Sign in as Document Owner">
+                        📂 OWNER
+                    </button>
+                    <button type="button" class="demo-chip" id="demo-viewer" onclick="fillCredentials('viewer@trustvault.local', 'viewer123456!')" title="Sign in as Document Viewer">
+                        👁️ VIEWER
+                    </button>
+                </div>
+            </div>
+
             <div class="signup-prompt">
                 Don't have an account yet? <a href="/signup.html">Create an Account</a>
             </div>
@@ -348,6 +366,15 @@
     </footer>
 
     <script>
+        function fillCredentials(email, pwd) {
+            const userField = document.getElementById('username');
+            const pwdField = document.getElementById('password');
+            userField.value = email;
+            pwdField.value = pwd;
+            const btn = document.getElementById('submit-btn');
+            if (btn) btn.focus();
+        }
+
         // Parse query params
         const params = new URLSearchParams(window.location.search);
         if (params.has('error')) {

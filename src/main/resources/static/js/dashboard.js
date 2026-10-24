@@ -176,6 +176,11 @@ function updateDropzoneDisplay(file) {
     fileNameDisplay.textContent = file.name;
     fileSizeDisplay.textContent = `(${formatBytes(file.size)})`;
     dropzoneFileName.classList.add("visible");
+    const titleInput = document.getElementById("title");
+    if (titleInput && (!titleInput.value || titleInput.value.trim() === "")) {
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+        titleInput.value = nameWithoutExt;
+    }
 }
 
 // Skeleton Loader

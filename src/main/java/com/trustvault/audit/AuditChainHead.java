@@ -44,6 +44,19 @@ public class AuditChainHead {
     protected AuditChainHead() {
     }
 
+    public AuditChainHead(
+            Long id,
+            Long lastEventId,
+            String lastHash,
+            String checkpointHmac,
+            LocalDateTime updatedAt) {
+        this.id = id;
+        this.lastEventId = lastEventId;
+        this.lastHash = lastHash;
+        this.checkpointHmac = checkpointHmac;
+        this.updatedAt = updatedAt;
+    }
+
     public Long getId() {
         return id;
     }

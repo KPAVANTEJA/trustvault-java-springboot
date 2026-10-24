@@ -30,8 +30,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 	@Query("""
 		    SELECT new com.trustvault.audit.AuditLogResponse(
 		        a.id,
-		        a.document.id,
-		        a.document.title,
+		        d.id,
+		        d.title,
 		        a.user.id,
 		        a.user.email,
 		        a.user.fullName,
@@ -44,7 +44,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 		        a.newPermissionType
 		    )
 		    FROM AuditLog a
-		    ORDER BY a.eventTime DESC
+		    LEFT JOIN a.document d
+		    ORDER BY a.eventTime DESC, a.id DESC
 		    """)
 		Page<AuditLogResponse> findRecentAuditLogs(Pageable pageable);
 
