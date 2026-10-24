@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.trustvault.user.AppUser;
 import com.trustvault.user.AppUserRepository;
 import com.trustvault.user.UserRole;
@@ -38,6 +41,9 @@ import com.trustvault.audit.AuditLogService;
 @RestController
 @RequestMapping("/api/documents")
 public class DocumentController {
+
+        private static final Logger log =
+        LoggerFactory.getLogger(DocumentController.class);
 
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
 
@@ -197,10 +203,11 @@ public class DocumentController {
             );
 
         } catch (IOException ex) {
-            throw new ResponseStatusException(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "Unable to store document.");
-        } catch (RuntimeException ex) {
+    log.error("Document upload failed during file hashing or storage.", ex);
+    throw new ResponseStatusException(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        "Unable to store document.");
+     } catch (RuntimeException ex) {
             if (storageKey != null) {
                 storageService.deleteQuietly(storageKey);
             }
