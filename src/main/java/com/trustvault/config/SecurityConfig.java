@@ -1,6 +1,7 @@
 package com.trustvault.config;
 
 import org.springframework.context.annotation.Bean;
+
 import org.springframework.context.annotation.Configuration;
 
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -11,6 +12,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.CsrfFilter;
+import com.trustvault.user.AppUserRepository;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import com.trustvault.security.LiveUserAccountFilter;
 
 import com.trustvault.security.PermissionEndpointAccessDeniedHandler;
 
@@ -22,7 +26,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             PermissionEndpointAccessDeniedHandler
-                    permissionEndpointAccessDeniedHandler)
+                    permissionEndpointAccessDeniedHandler,
+            AppUserRepository userRepository)
             throws Exception {
 
         http.csrf(csrf -> csrf
@@ -33,10 +38,17 @@ public class SecurityConfig {
         );
 
         http.addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class);
+        
+        http.addFilterBefore(
+                new LiveUserAccountFilter(userRepository),
+                UsernamePasswordAuthenticationFilter.class);
 
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                        "/", "/index.html", "/css/**", "/js/**",
+                        "/", "/index.html", "/login", "/login.html", "/logout",
+                        "/signup.html", "/api/auth/signup",
+                        "/dashboard", "/dashboard.html", "/admin", "/admin.html",
+                        "/css/**", "/js/**",
                         "/images/**", "/favicon.ico", "/error"
                 ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -49,12 +61,15 @@ public class SecurityConfig {
         );
 
         http.formLogin(form -> form
-                .defaultSuccessUrl("/index.html", true)
+                .loginPage("/login.html")
+                .loginProcessingUrl("/login")
+                .defaultSuccessUrl("/dashboard.html", true)
                 .permitAll()
         );
 
         http.logout(logout -> logout
-                .logoutSuccessUrl("/index.html")
+                .logoutUrl("/api/auth/logout")
+                .logoutSuccessUrl("/login.html?logout")
                 .permitAll()
         );
 

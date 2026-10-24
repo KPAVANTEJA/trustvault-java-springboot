@@ -40,6 +40,7 @@ public class AppUser {
     private UserRole role;
 
     @Column(name = "ENABLED", nullable = false)
+    @Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
     private boolean enabled = true;
 
     @Column(name = "CREATED_AT", nullable = false, updatable = false)
@@ -93,7 +94,15 @@ public class AppUser {
         return enabled;
     }
 
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-}
+}
