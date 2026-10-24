@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create an account on TrustVault - Provable Custody and Cryptographic Document Security Platform.">
+    <title>TrustVault | Create Account</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        .signup-page {
+            min-height: calc(100vh - 140px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .signup-card {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(13, 19, 32, 0.88);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(79, 254, 156, 0.2);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 35px rgba(79, 254, 156, 0.08);
+            border-radius: 20px;
+            padding: 40px 36px;
+            animation: fadeIn 0.4s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .signup-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            right: 20%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #4ffe9c, transparent);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .signup-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .signup-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 14px;
+            background: rgba(79, 254, 156, 0.1);
+            border: 1px solid rgba(79, 254, 156, 0.28);
+            border-radius: 999px;
+            color: #4ffe9c;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .signup-header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin: 0 0 8px;
+            letter-spacing: -0.5px;
+            color: #f1f5f9;
+        }
+
+        .signup-header p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .alert-box {
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 22px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-box.visible {
+            display: flex;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fca5a5;
+        }
+
+        .alert-success {
+            background: rgba(79, 254, 156, 0.12);
+            border: 1px solid rgba(79, 254, 156, 0.35);
+            color: #4ffe9c;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 7px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            background: #090e17;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4ffe9c;
+            box-shadow: 0 0 0 3px rgba(79, 254, 156, 0.18);
+            background: #0d1522;
+        }
+
+        .strength-container {
+            margin-top: 8px;
+        }
+
+        .strength-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            gap: 3px;
+        }
+
+        .strength-segment {
+            flex: 1;
+            height: 100%;
+            background: transparent;
+            transition: background-color 0.3s ease;
+        }
+
+        .strength-text {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px 20px;
+            background: #4ffe9c;
+            color: #071910;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 750;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 14px;
+            font-family: inherit;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            background: #6effb0;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(79, 254, 156, 0.3);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .signup-footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .signup-footer a {
+            color: #4ffe9c;
+            font-weight: 600;
+        }
+
+        .signup-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .policy-note {
+            font-size: 11px;
+            color: #64748b;
+            text-align: center;
+            margin-top: 16px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <a class="brand" href="/">
+            <span class="brand-icon">T</span>
+            TrustVault
+        </a>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/#security">Security</a>
+            <a class="login-link" href="/login.html">Sign In</a>
+        </nav>
+    </header>
+
+    <main class="signup-page">
+        <div class="signup-card">
+            <div class="signup-header">
+                <div class="signup-badge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    Provable Custody Protocol
+                </div>
+                <h1>Create Account</h1>
+                <p>Register for secure, tamper-evident document custody</p>
+            </div>
+
+            <div id="error-alert" class="alert-box alert-error" role="alert">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span id="error-text">Registration failed.</span>
+            </div>
+
+            <div id="success-alert" class="alert-box alert-success" role="status">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span id="success-text">Account created successfully! Redirecting...</span>
+            </div>
+
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="fullName">Full Name</label>
+                    <input class="form-control" type="text" id="fullName" name="fullName"
+                           placeholder="e.g. Sarah Jenkins" required autofocus maxlength="120">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input class="form-control" type="email" id="email" name="email"
+                           placeholder="sarah@company.com" required autocomplete="email">
+                </div>
+                
+                <div class="form-group">
+    <label for="role">Account Role</label>
+    <select class="form-control" id="role" name="role" required>
+        <option value="" disabled selected>Select your role</option>
+        <option value="OWNER">Owner — Upload and manage your documents</option>
+        <option value="VIEWER">Viewer — Access documents shared with you</option>
+    </select>
+    <small style="color: #94a3b8; font-size: 12px;">
+        Administrator access is assigned separately.
+    </small>
+</div>
+
+                <div class="form-group">
+                    <label for="password">Master Password</label>
+                    <input class="form-control" type="password" id="password" name="password"
+                           placeholder="At least 12 characters" required autocomplete="new-password">
+                    <div class="strength-container">
+                        <div class="strength-bar">
+                            <div class="strength-segment" id="seg-1"></div>
+                            <div class="strength-segment" id="seg-2"></div>
+                            <div class="strength-segment" id="seg-3"></div>
+                            <div class="strength-segment" id="seg-4"></div>
+                        </div>
+                        <div class="strength-text">
+                            <span id="strength-label">Minimum 12 characters</span>
+                            <span id="char-count">0 / 12</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input class="form-control" type="password" id="confirmPassword" name="confirmPassword"
+                           placeholder="Repeat your password" required autocomplete="new-password">
+                    <div id="match-error" style="display:none; color: #fca5a5; font-size: 11px; margin-top: 5px;">
+                        Passwords do not match.
+                    </div>
+                </div>
+
+                <button class="btn-submit" type="submit" id="submit-btn">
+                    <span>Create Account</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </button>
+            </form>
+
+            <p class="policy-note">
+                By creating an account, your activity will be cryptographically signed with sequential HMAC-SHA256 audit chaining.
+            </p>
+
+            <div class="signup-footer">
+                Already have an account? <a href="/login.html">Sign In</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <a class="brand" href="/">
+            <span class="brand-icon">T</span>
+            TrustVault
+        </a>
+        <p class="copyright">&copy; 2026 TrustVault &mdash; Secure Document Platform</p>
+    </footer>
+
+    <script>
+        function getCsrfToken() {
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : '';
+        }
+
+        // Initialize CSRF token
+        fetch('/api/auth/me', { method: 'GET', credentials: 'same-origin' }).catch(() => {});
+
+        const passwordInput = document.getElementById('password');
+        const confirmInput = document.getElementById('confirmPassword');
+        const strengthLabel = document.getElementById('strength-label');
+        const charCount = document.getElementById('char-count');
+        const seg1 = document.getElementById('seg-1');
+        const seg2 = document.getElementById('seg-2');
+        const seg3 = document.getElementById('seg-3');
+        const seg4 = document.getElementById('seg-4');
+        const matchError = document.getElementById('match-error');
+
+        function evaluatePassword(pwd) {
+            charCount.textContent = `${pwd.length} / 12`;
+            if (pwd.length === 0) {
+                seg1.style.backgroundColor = 'transparent';
+                seg2.style.backgroundColor = 'transparent';
+                seg3.style.backgroundColor = 'transparent';
+                seg4.style.backgroundColor = 'transparent';
+                strengthLabel.textContent = 'Minimum 12 characters';
+                strengthLabel.style.color = '#94a3b8';
+                return 0;
+            }
+
+            let score = 0;
+            if (pwd.length >= 12) score++;
+            if (pwd.length >= 16) score++;
+            if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
+            if (/[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd)) score++;
+
+            seg1.style.backgroundColor = score >= 1 ? (score < 2 ? '#ef4444' : '#eab308') : 'transparent';
+            seg2.style.backgroundColor = score >= 2 ? (score < 3 ? '#eab308' : '#3b82f6') : 'transparent';
+            seg3.style.backgroundColor = score >= 3 ? (score < 4 ? '#3b82f6' : '#4ffe9c') : 'transparent';
+            seg4.style.backgroundColor = score >= 4 ? '#4ffe9c' : 'transparent';
+
+            if (score <= 1) {
+                strengthLabel.textContent = pwd.length < 12 ? `Needs ${12 - pwd.length} more chars` : 'Weak password';
+                strengthLabel.style.color = '#fca5a5';
+            } else if (score === 2) {
+                strengthLabel.textContent = 'Fair strength';
+                strengthLabel.style.color = '#fde047';
+            } else if (score === 3) {
+                strengthLabel.textContent = 'Good strength';
+                strengthLabel.style.color = '#93c5fd';
+            } else {
+                strengthLabel.textContent = 'Strong password';
+                strengthLabel.style.color = '#4ffe9c';
+            }
+            return score;
+        }
+
+        passwordInput.addEventListener('input', () => {
+            evaluatePassword(passwordInput.value);
+            if (confirmInput.value) {
+                matchError.style.display = passwordInput.value !== confirmInput.value ? 'block' : 'none';
+            }
+        });
+
+        confirmInput.addEventListener('input', () => {
+            matchError.style.display = passwordInput.value !== confirmInput.value ? 'block' : 'none';
+        });
+
+        const form = document.getElementById('signup-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const errorAlert = document.getElementById('error-alert');
+        const errorText = document.getElementById('error-text');
+        const successAlert = document.getElementById('success-alert');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorAlert.classList.remove('visible');
+            successAlert.classList.remove('visible');
+            matchError.style.display = 'none';
+
+            const fullName = document.getElementById('fullName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = passwordInput.value;
+            const confirmPassword = confirmInput.value;
+
+            if (password !== confirmPassword) {
+                matchError.style.display = 'block';
+                confirmInput.focus();
+                return;
+            }
+
+            if (password.length < 12) {
+                errorText.textContent = 'Password must be at least 12 characters.';
+                errorAlert.classList.add('visible');
+                passwordInput.focus();
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span>Creating Account...</span>`;
+
+            try {
+                const csrf = getCsrfToken();
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                };
+                if (csrf) {
+                    headers['X-XSRF-TOKEN'] = csrf;
+                }
+
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: headers,
+                    body: JSON.stringify({
+                        fullName,
+                        email,
+                        password,
+                        role: document.getElementById('role').value
+                    })
+                });
+
+                const data = await response.json().catch(() => null);
+
+                if (!response.ok) {
+                    const message = (data && (data.message || data.error)) || 'Registration failed. Please check your details.';
+                    throw new Error(message);
+                }
+
+                successAlert.classList.add('visible');
+                setTimeout(() => {
+                    window.location.href = '/login.html?registered=1';
+                }, 1200);
+
+            } catch (err) {
+                errorText.textContent = err.message || 'An error occurred during sign up.';
+                errorAlert.classList.add('visible');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `
+                    <span>Create Account</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
