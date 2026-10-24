@@ -154,7 +154,14 @@ public class DocumentController {
                 "File extension and content type do not match.");
         }
         
-        fileContentValidator.validate(file, expectedType);
+        try {
+    fileContentValidator.validate(file, expectedType);
+} catch (ResponseStatusException ex) {
+    throw ex;
+} catch (RuntimeException ex) {
+    log.error("Unexpected document content validation failure.", ex);
+    throw ex;
+}
         
         //Validate Category
         if (category != null && category.trim().length() > 100) {
