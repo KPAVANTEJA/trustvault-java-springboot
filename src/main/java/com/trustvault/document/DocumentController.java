@@ -207,12 +207,13 @@ public class DocumentController {
     throw new ResponseStatusException(
         HttpStatus.INTERNAL_SERVER_ERROR,
         "Unable to store document.");
-     } catch (RuntimeException ex) {
-            if (storageKey != null) {
-                storageService.deleteQuietly(storageKey);
-            }
-            throw ex;
-        }
+} catch (RuntimeException ex) {
+    log.error("Document upload failed during database or audit processing.", ex);
+    if (storageKey != null) {
+        storageService.deleteQuietly(storageKey);
+    }
+    throw ex;
+}
     }
 
     @GetMapping
