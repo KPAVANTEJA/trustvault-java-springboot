@@ -26,6 +26,12 @@ public class DocumentContentHashService {
         }
     }
 
+    public String sha256(byte[] content) throws IOException {
+        try (InputStream input = new java.io.ByteArrayInputStream(content)) {
+            return calculateHash(input);
+        }
+    }
+
     private String calculateHash(InputStream input) throws IOException {
         final MessageDigest digest;
 

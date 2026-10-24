@@ -1,7 +1,7 @@
 
 "use strict";
 
-// Smoothly navigate to sections of the TrustVault homepage.
+// Smoothly navigate to sections of the Docurithm homepage.
 document.querySelectorAll('a[href^="#"]').forEach((link) => {
     link.addEventListener("click", (event) => {
         const targetId = link.getAttribute("href");
@@ -52,10 +52,10 @@ async function updateLoginNavigation() {
         loginLink.textContent = "Sign Out";
         loginLink.href = "/logout";
 
-        loginLink.setAttribute("aria-label", "Sign out of TrustVault");
+        loginLink.setAttribute("aria-label", "Sign out of Docurithm");
 
         if (accessLink) {
-            accessLink.textContent = "Open TrustVault";
+            accessLink.textContent = "Open Docurithm";
             accessLink.href = "/dashboard.html";
         }
     } catch (error) {
@@ -70,7 +70,7 @@ function showSignedOutState(loginLink, accessLink) {
     loginLink.href = "/login";
 
     if (accessLink) {
-        accessLink.textContent = "Access TrustVault";
+        accessLink.textContent = "Access Docurithm";
         accessLink.href = "/login";
     }
 }

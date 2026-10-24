@@ -1,6 +1,7 @@
 package com.trustvault.document;
 
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -27,6 +28,7 @@ import java.time.LocalDate;
 import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -302,34 +304,46 @@ public class DocumentController {
             }
         }
 
-        Path filePath = storageService.resolve(document.getStorageKey());
-
-        if (!Files.isRegularFile(filePath)
-                || !Files.isReadable(filePath)) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Document file not found.");
+        Path filePath = null;
+        byte[] cloudContent = null;
+        if (storageService.isSupabaseStorage()) {
+            try {
+                cloudContent = storageService.read(document.getStorageKey());
+            } catch (FileNotFoundException ex) {
+                auditLogService.recordViewFailure(document, user, "FAILED");
+                throw new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Document file not found.");
+            } catch (IOException ex) {
+                auditLogService.recordViewFailure(document, user, "INTEGRITY_CHECK_ERROR");
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Unable to retrieve document.");
+            }
+        } else {
+            filePath = storageService.resolve(document.getStorageKey());
+            if (!Files.isRegularFile(filePath) || !Files.isReadable(filePath)) {
+                throw new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Document file not found.");
+            }
         }
 
-        // Verify the stored file against its recorded SHA-256 hash.
+        // Verify the downloaded object against its recorded SHA-256 hash.
         String expectedHash = document.getContentSha256();
-
         if (expectedHash == null || expectedHash.isBlank()) {
             auditLogService.recordViewFailure(
                     document, user, "INTEGRITY_UNAVAILABLE");
-
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Document integrity verification is unavailable.");
         }
 
         try {
-            String actualHash = contentHashService.sha256(filePath);
-
+            String actualHash = storageService.isSupabaseStorage()
+                    ? contentHashService.sha256(cloudContent)
+                    : contentHashService.sha256(filePath);
             if (!actualHash.equalsIgnoreCase(expectedHash)) {
                 auditLogService.recordViewFailure(
                         document, user, "INTEGRITY_MISMATCH");
-
                 throw new ResponseStatusException(
                         HttpStatus.INTERNAL_SERVER_ERROR,
                         "Document integrity verification failed.");
@@ -337,7 +351,6 @@ public class DocumentController {
         } catch (IOException ex) {
             auditLogService.recordViewFailure(
                     document, user, "INTEGRITY_CHECK_ERROR");
-
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Unable to verify document integrity.");
@@ -375,7 +388,9 @@ public class DocumentController {
                     "text/plain;charset=UTF-8");
         }
 
-        Resource resource = new FileSystemResource(filePath);
+        Resource resource = storageService.isSupabaseStorage()
+                ? new ByteArrayResource(cloudContent)
+                : new FileSystemResource(filePath);
 
         auditLogService.recordView(document, user);
 
@@ -437,31 +452,44 @@ public ResponseEntity<Resource> downloadDocument(
     	}
     }
 
-    Path filePath = storageService.resolve(document.getStorageKey());
-
-    if (!Files.isRegularFile(filePath) || !Files.isReadable(filePath)) {
-        throw new ResponseStatusException(
-                HttpStatus.NOT_FOUND, "Document file not found.");
+    Path filePath = null;
+    byte[] cloudContent = null;
+    if (storageService.isSupabaseStorage()) {
+        try {
+            cloudContent = storageService.read(document.getStorageKey());
+        } catch (FileNotFoundException ex) {
+            auditLogService.recordDownloadFailure(document, user, "FAILED");
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Document file not found.");
+        } catch (IOException ex) {
+            auditLogService.recordDownloadFailure(document, user, "INTEGRITY_CHECK_ERROR");
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Unable to retrieve document.");
+        }
+    } else {
+        filePath = storageService.resolve(document.getStorageKey());
+        if (!Files.isRegularFile(filePath) || !Files.isReadable(filePath)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Document file not found.");
+        }
     }
-    
-    String expectedHash = document.getContentSha256();
 
+    String expectedHash = document.getContentSha256();
     if (expectedHash == null || expectedHash.isBlank()) {
         auditLogService.recordDownloadFailure(
                 document, user, "INTEGRITY_UNAVAILABLE");
-
         throw new ResponseStatusException(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "Document integrity verification is unavailable.");
     }
 
     try {
-        String actualHash = contentHashService.sha256(filePath);
-
+        String actualHash = storageService.isSupabaseStorage()
+                ? contentHashService.sha256(cloudContent)
+                : contentHashService.sha256(filePath);
         if (!actualHash.equalsIgnoreCase(expectedHash)) {
             auditLogService.recordDownloadFailure(
                     document, user, "INTEGRITY_MISMATCH");
-
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Document integrity verification failed.");
@@ -469,13 +497,14 @@ public ResponseEntity<Resource> downloadDocument(
     } catch (IOException ex) {
         auditLogService.recordDownloadFailure(
                 document, user, "INTEGRITY_CHECK_ERROR");
-
         throw new ResponseStatusException(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "Unable to verify document integrity.");
     }
 
-    Resource resource = new FileSystemResource(filePath);
+    Resource resource = storageService.isSupabaseStorage()
+            ? new ByteArrayResource(cloudContent)
+            : new FileSystemResource(filePath);
 
     String contentType = document.getContentType() == null
             ? MediaType.APPLICATION_OCTET_STREAM_VALUE

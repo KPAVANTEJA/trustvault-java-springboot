@@ -62,3 +62,10 @@ Thumbs.db
 
 # Private file storage
 trustvault-private-files/
+
+.env*
+!.env.example
+
+docurithm-private-files/
+
+supabase/.env

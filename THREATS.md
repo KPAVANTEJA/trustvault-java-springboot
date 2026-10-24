@@ -1,7 +1,7 @@
-# TrustVault Threat Model & Security Controls
+# Docurithm Threat Model & Security Controls
 
-**Updated:** 2026-10-23
-**Status:** Comprehensive Analysis & Automated Verification Complete
+**Updated:** 2026-10-24
+**Status:** Existing local controls documented; hosted Render/Supabase storage integration verification pending
 
 ---
 
@@ -18,7 +18,7 @@
 
 ## 2. Threat Matrix, Mitigations, and Verification Evidence
 
-| Threat | Specific Attack Vector | Mitigation in TrustVault | Verification Evidence | Status |
+| Threat | Specific Attack Vector | Mitigation in Docurithm | Verification Evidence | Status |
 |---|---|---|---|---|
 | **Unauthorized File Download** | Non-granted user attempts to download another user's file via guessing `/api/documents/{id}/download`. | Server validates ownership or explicit `VIEW`/`EDIT` grant for every download. Returns HTTP 404 (non-disclosing) and records a `DOWNLOAD_DENIED` audit event. | `DocumentDownloadAuthorizationTests#viewerWithoutPermissionCannotDownloadDocument` | **Mitigated & Verified** |
 | **Cross-User Document Discovery** | Non-privileged user searches or lists documents via `/api/documents` or `/api/documents/search`. | Role-specific JPQL queries: ADMIN sees ADMIN-owned only; OWNER sees owned or shared; VIEWER sees strictly shared. | `DocumentVisibilityIntegrationTests#adminSeesAdminOwnedDocumentsOnly`, `#ownerSeesOwnedAndSharedDocuments`, `#viewerSeesSharedDocumentsOnly` | **Mitigated & Verified** |
@@ -37,7 +37,7 @@
 
 ## 3. Detailed Document Permission Model
 
-TrustVault enforces fine-grained, document-level security:
+Docurithm enforces fine-grained, document-level security:
 
 ```
 [Document Owner] ──(Grants / Revokes)──► [Named Recipient]
@@ -134,3 +134,12 @@ As required by the security challenge guidelines, we explicitly document all acc
   email or target user ID when available. Some validation failures occur
   before the target user or permission can be resolved, so those events may
   not contain the complete recipient and permission context.
+
+## Hosted database and private object storage (Render + Supabase)
+
+- **Threat:** A leaked Supabase secret key can bypass Storage Row Level Security and expose or modify project data.
+- **Mitigation:** Keep the key only in Render's server-side environment settings. Never put it in browser JavaScript, HTML, source control, screenshots, or logs. The bucket must stay private.
+- **Application access boundary:** The backend must check the signed-in user's document ownership/permission before it reads an object. Supabase Storage's service key is privileged and does not replace Docurithm's per-document authorization checks.
+- **Threat:** A deployment may write uploads to ephemeral application disk or lose access to a document object while the database metadata remains.
+- **Mitigation:** Hosted uploads are stored via the Supabase Storage API; database metadata stores only the random UUID storage key and SHA-256. The application verifies the bytes against the stored SHA-256 before serving them.
+- **Residual risks:** External network/API failures may make an object temporarily unavailable; cleanup calls can fail and leave orphaned objects that need monitoring. This hosted-storage path requires integration testing in the configured cloud project before it is claimed production-verified.

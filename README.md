@@ -1,13 +1,13 @@
-# 🛡️ TrustVault — Secure Document Sharing with Verifiable Audit Trails
+# 🛡️ Docurithm — Secure Document Governance with Verifiable Audit Trails
 
 <p align="center">
   <img src="https://img.shields.io/badge/Security-Zero--Trust_Architecture-00C853?style=for-the-badge&logo=shield" alt="Zero Trust Security"/>
   <img src="https://img.shields.io/badge/Audit_Trail-HMAC--SHA256_Blockchain-0070F3?style=for-the-badge&logo=blockchaindotcom" alt="HMAC Blockchain"/>
-  <img src="https://img.shields.io/badge/Automated_Tests-56_Passed_%7C_0_Failed-brightgreen?style=for-the-badge&logo=checkmarx" alt="56 Passed Tests"/>
+  <img src="https://img.shields.io/badge/Automated_Tests-Security_Focused-brightgreen?style=for-the-badge&logo=checkmarx" alt="67 Tests in Previous Local Baseline"/>
   <img src="https://img.shields.io/badge/Revocation-Immediate_Latency-FF0055?style=for-the-badge&logo=lightning" alt="Immediate Revocation"/>
   <img src="https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 17"/>
   <img src="https://img.shields.io/badge/Spring_Boot-4.1.1-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot 4.1.1"/>
-  <img src="https://img.shields.io/badge/Oracle_Database-Enterprise_SQL-F80000?style=for-the-badge&logo=oracle&logoColor=white" alt="Oracle Database"/>
+  <img src="https://img.shields.io/badge/Oracle_Local_%7C_PostgreSQL_Cloud-Database-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="Oracle local development and PostgreSQL hosted production"/>
   <img src="https://img.shields.io/badge/Frontend-Responsive_SPA_(HTML5/CSS3/JS)-E34F26?style=for-the-badge&logo=javascript" alt="Frontend"/>
 </p>
 
@@ -27,9 +27,10 @@
   - [Entity-Relationship Diagram (ERD)](#entity-relationship-diagram-erd)
   - [Database Schema Dictionary \& Invariants](#database-schema-dictionary--invariants)
 - [Role-Based Access Control (RBAC) Matrix](#-role-based-access-control-rbac-matrix)
-- [Demo Seed Accounts \& Quick-Fill Credentials](#-demo-seed-accounts--quick-fill-credentials)
+- [Demo Seed Accounts](#-demo-seed-accounts)
+- [Hosted Demo Architecture (Render + Supabase)](#-hosted-demo-architecture-render--supabase)
 - [Quickstart Guide (Local \& Production)](#-quickstart-guide-local--production)
-- [Automated Security Test Suite (56 Tests)](#-automated-security-test-suite-56-tests)
+- [Automated Security Test Suite](#-automated-security-test-suite)
 - [Interview Defense: The Non-Negotiable Authorization Point](#-interview-defense-the-non-negotiable-authorization-point)
 - [Project Deliverables \& Hand-In Artifacts](#-project-deliverables--hand-in-artifacts)
 
@@ -55,8 +56,8 @@ Every enterprise shares confidential documents: salary letters, customer contrac
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### The TrustVault Solution
-TrustVault is a zero-trust document security platform where:
+### The Docurithm Solution
+Docurithm is a zero-trust document security platform where:
 1. **The wrong person can NEVER reach a file** through any route (direct API, parameter tampering, IDOR, URL guessing, or role exploitation).
 2. **You can mathematically PROVE who accessed it** and who was refused, backed by a cryptographic HMAC-SHA256 hash-chained audit trail that detects any retroactive tampering.
 3. **Revocation takes effect in ZERO milliseconds** — no lingering bearer tokens or pre-signed links.
@@ -69,15 +70,15 @@ TrustVault is a zero-trust document security platform where:
 
 | Principle | Architectural Guarantee | Concrete Enforcement in Code |
 |:---|:---|:---|
-| **1. Server Decides Every Time** | A document is reachable **only** by an authenticated user with an active grant. Hiding UI buttons does not count. | [DocumentController.java:270-285](file:///c:/TrustVault/trustvault/src/main/java/com/trustvault/document/DocumentController.java#L270-L285) calls `hasDownloadAccess()` on every request before any stream starts. |
-| **2. Cryptographic Proof of Access** | An audit trail that can be quietly altered is not evidence. Both successful access and refused attempts are recorded. | Every audit row contains an HMAC-SHA256 signature linked to the previous row's hash. Any modification breaks the chain verified by [AuditIntegrityService.java](file:///c:/TrustVault/trustvault/src/main/java/com/trustvault/audit/AuditIntegrityService.java). |
+| **1. Server Decides Every Time** | A document is reachable **only** by an authenticated user with an active grant. Hiding UI buttons does not count. | [DocumentController.java](src/main/java/com/trustvault/document/DocumentController.java) calls `hasDownloadAccess()` on every request before any stream starts. |
+| **2. Cryptographic Proof of Access** | An audit trail that can be quietly altered is not evidence. Both successful access and refused attempts are recorded. | Every audit row contains an HMAC-SHA256 signature linked to the previous row's hash. Any modification breaks the chain verified by [AuditIntegrityService.java](src/main/java/com/trustvault/audit/AuditIntegrityService.java). |
 | **3. Instant Revocation** | When an owner takes access away, everything previously issued stops working **immediately**. | Permissions are checked live against the database on each download. Deleting a grant in `TV_DOCUMENT_PERMISSIONS` takes effect in sub-millisecond real time. |
 
 ---
 
 ## 🏛️ System Architecture
 
-TrustVault is structured in clear security boundaries, strictly isolating client presentation from sensitive storage:
+Docurithm is structured in clear security boundaries, strictly isolating client presentation from sensitive storage:
 
 ```mermaid
 graph TB
@@ -108,15 +109,15 @@ graph TB
     end
 
     subgraph StorageLayer ["5. Persistence & Isolated Storage"]
-        ORACLE_DB[("Oracle Database SQL / H2 Test DB<br/>TV_USERS, TV_DOCS, TV_PERMS, TV_AUDIT")]
-        VAULT_FS["Private Storage Directory (trustvault-private-files)<br/>UUID Keys Outside Web Root - No Direct HTTP Access"]
+        ORACLE_DB[("Oracle (local) / Supabase PostgreSQL (hosted) / H2 (tests)<br/>Users, Documents, Permissions, Audit")]
+        VAULT_FS["Private Storage<br/>Local private directory (development)<br/>Supabase private bucket (hosted)"]
     end
 
     ClientLayer -->|HTTPS + CSRF| SecurityPerimeter
     SecurityPerimeter --> ControllerLayer
     ControllerLayer --> CoreEnforcement
-    CoreEnforcement -->|Encrypted Hashes & Metadata| ORACLE_DB
-    CoreEnforcement -->|Stream by UUID Key| VAULT_FS
+    CoreEnforcement -->|Metadata & Audit Records| ORACLE_DB
+    CoreEnforcement -->|Stream by server-generated UUID| VAULT_FS
 ```
 
 ---
@@ -125,7 +126,7 @@ graph TB
 
 ### 1. Document Ingestion & Cryptographic Storage Flow
 
-Every upload undergoes magic-byte inspection (preventing file spoofing), SHA-256 fingerprinting, isolated disk storage using a server-generated UUID, and immediate cryptographic audit chaining:
+Every upload undergoes magic-byte inspection (preventing file spoofing), SHA-256 fingerprinting, private storage using a server-generated UUID (local filesystem for development and a private Supabase Storage bucket for the hosted profile), and immediate cryptographic audit chaining:
 
 ```mermaid
 sequenceDiagram
@@ -163,7 +164,7 @@ sequenceDiagram
 
 ### 2. Zero-Trust Access Control & Download Flow
 
-When any user attempts a download, TrustVault evaluates permissions live, logs refused attempts without disclosing file existence, checks file integrity on disk, and streams the document:
+When any user attempts a download, Docurithm evaluates permissions live, logs refused attempts without disclosing file existence, checks the stored content against its SHA-256 hash, and streams the document:
 
 ```mermaid
 sequenceDiagram
@@ -241,7 +242,7 @@ sequenceDiagram
 
 ### 4. Tamper-Evident Audit Blockchain Flow
 
-TrustVault maintains a cryptographic ledger where every record is hashed with HMAC-SHA256 linked to the preceding entry:
+Docurithm maintains a cryptographic ledger where every record is hashed with HMAC-SHA256 linked to the preceding entry:
 
 ```mermaid
 graph LR
@@ -306,7 +307,7 @@ erDiagram
         VARCHAR2(100) CONTENT_TYPE "Validated MIME type"
         VARCHAR2(100) CATEGORY "Grouping (Legal, HR, Finance, etc.)"
         NUMBER(19) SIZE_BYTES "Byte count"
-        VARCHAR2(64) CONTENT_SHA256 "SHA-256 hash for disk integrity"
+        VARCHAR2(64) CONTENT_SHA256 "SHA-256 hash for stored-content integrity"
         NUMBER(1) IS_DELETED "Soft-delete flag (0 = active, 1 = deleted)"
         NUMBER(19) OWNER_ID FK "References TV_USERS(ID)"
         TIMESTAMP CREATED_AT "Upload timestamp"
@@ -344,7 +345,7 @@ erDiagram
 ### Database Schema Dictionary & Invariants
 
 1. **`TV_USERS`**: Contains identity and role boundaries. Passwords are never stored in plaintext; salted BCrypt hashes with cost factor 10+ are enforced.
-2. **`TV_DOCUMENTS`**: File metadata. The file itself is stored outside the database using `STORAGE_KEY` (UUID v4) in private file storage. The client can never dictate the `STORAGE_KEY` or `OWNER_ID`. `CONTENT_SHA256` prevents silent disk tampering.
+2. **`TV_DOCUMENTS`**: File metadata. The file itself is stored outside the database using `STORAGE_KEY` (UUID v4) in private file storage (local disk in development or Supabase Storage in the hosted profile). The client can never dictate the `STORAGE_KEY` or `OWNER_ID`. `CONTENT_SHA256` detects content tampering before files are served.
 3. **`TV_DOCUMENT_PERMISSIONS`**: Enforces composite uniqueness on `(DOCUMENT_ID, USER_ID)`. `PERMISSION_TYPE` is constrained to `VIEW` or `EDIT`. Grants can be revoked instantly via `DELETE`.
 4. **`TV_AUDIT_LOGS`**: Append-only log. Contains `PREVIOUS_HASH` and `EVENT_HASH` to build the Merkle-like HMAC sequence.
 5. **`TV_AUDIT_CHAIN_HEAD`**: Singleton row (`CHECK (ID = 1)`). Anchors the head pointer and prevents silent truncation of the audit trail.
@@ -353,7 +354,7 @@ erDiagram
 
 ## 👥 Role-Based Access Control (RBAC) Matrix
 
-TrustVault enforces a **Zero-Trust Model**: an account role does not confer blanket access to documents.
+Docurithm enforces a **Zero-Trust Model**: an account role does not confer blanket access to documents.
 
 | Capability / API Operation | Viewer | Document Owner | Administrator |
 |:---|:---:|:---:|:---:|
@@ -373,44 +374,41 @@ TrustVault enforces a **Zero-Trust Model**: an account role does not confer blan
 
 ---
 
-## 🔑 Demo Seed Accounts & Quick-Fill Credentials
+## 🔑 Demo Seed Accounts
 
-For evaluation and testing, the application can be accessed using pre-seeded accounts:
-
-| Role Persona | Email Address | Password | Intended Evaluation Workflow |
-|:---|:---|:---|:---|
-| 👑 **Administrator** | `admin@example.com` | `Admin123456!` | Log in, visit Admin Console (`/admin.html`), inspect live audit logs, trigger HMAC integrity verification, manage user roles. |
-| 💼 **Document Owner** | `owner@example.com` | `Owner123456!` | Upload documents, categorize them, share `VIEW` or `EDIT` permissions with the viewer, revoke access, and observe instant blocking. |
-| 👁️ **Viewer** | `viewer@example.com` | `Viewer123456!` | Log in, verify upload controls are hidden, search and download shared documents; attempt to access unshared documents to trigger recorded refusals. |
-
-> 💡 **Quick-Fill Buttons:** On the sign-in page (`/login`), click the dedicated **"Demo: Admin"**, **"Demo: Owner"**, or **"Demo: Viewer"** badges to automatically fill credentials.
+The application creates the initial Admin, Owner, and Viewer accounts only when all six `TRUSTVAULT_*` account environment variables are configured. Choose unique passwords of at least 12 characters in the deployment dashboard; never reuse example credentials or commit credentials to source control. The public sign-in page does not expose prefilled demo passwords.
 
 ---
+
+## ☁️ Hosted Demo Architecture (Render + Supabase)
+
+The `prod` profile is prepared for a fresh Supabase PostgreSQL database and the private `docurithm-private` Storage bucket. Run [`supabase/schema.sql`](supabase/schema.sql) in the new Supabase project's SQL Editor before deploying. Configure `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `TRUSTVAULT_AUDIT_HMAC_KEY` in Render. Configure all six `TRUSTVAULT_ADMIN_*`, `TRUSTVAULT_OWNER_*`, and `TRUSTVAULT_VIEWER_*` values if you want the initial demo accounts created. Never expose the Supabase secret key in browser JavaScript or commit it to Git. This hosted database is separate from the existing Oracle `MYDATABASE`; no Oracle data is migrated automatically.
 
 ## 🚀 Quickstart Guide (Local & Production)
 
 ### System Requirements
 - **Java Development Kit (JDK):** Version 17+
 - **Apache Maven:** Version 3.8+
-- **Database:** Oracle Database 19c/21c/23ai (or automatic in-memory H2 during testing)
+- **Database:** Oracle Database for local development; Supabase PostgreSQL for the Render production profile; H2 for tests
 
 ### Step 1: Configure Environment Variables
 ```bash
-# HMAC Secret Key for cryptographic audit chain (Minimum 32 bytes Base64)
-export TRUSTVAULT_AUDIT_HMAC_KEY="MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+# Generate a NEW secret for this deployment. Keep the same value across all redeploys.
+# In PowerShell, use the compatible key-generation command in SUPABASE_DEPLOYMENT.md
+export TRUSTVAULT_AUDIT_HMAC_KEY="<your-generated-base64-secret>"
 
 # Oracle Database Connection (Omit if evaluating with H2 profile)
 export ORACLE_DB_URL="jdbc:oracle:thin:@//localhost:1521/XEPDB1"
 export ORACLE_DB_USERNAME="trustvault_user"
-export ORACLE_DB_PASSWORD="YourSecurePassword123"
+export ORACLE_DB_PASSWORD="<your-local-oracle-password>"
 
 # Optional Seed Credentials (Auto-created on first startup)
-export TRUSTVAULT_ADMIN_EMAIL="admin@example.com"
-export TRUSTVAULT_ADMIN_PASSWORD="Admin123456!"
-export TRUSTVAULT_OWNER_EMAIL="owner@example.com"
-export TRUSTVAULT_OWNER_PASSWORD="Owner123456!"
-export TRUSTVAULT_VIEWER_EMAIL="viewer@example.com"
-export TRUSTVAULT_VIEWER_PASSWORD="Viewer123456!"
+export TRUSTVAULT_ADMIN_EMAIL="<your-admin-email>"
+export TRUSTVAULT_ADMIN_PASSWORD="<unique-password-at-least-12-characters>"
+export TRUSTVAULT_OWNER_EMAIL="<your-owner-email>"
+export TRUSTVAULT_OWNER_PASSWORD="<unique-password-at-least-12-characters>"
+export TRUSTVAULT_VIEWER_EMAIL="<your-viewer-email>"
+export TRUSTVAULT_VIEWER_PASSWORD="<unique-password-at-least-12-characters>"
 ```
 
 ### Step 2: Build & Package
@@ -418,7 +416,7 @@ export TRUSTVAULT_VIEWER_PASSWORD="Viewer123456!"
 mvn clean package
 ```
 
-### Step 3: Run TrustVault
+### Step 3: Run Docurithm
 ```bash
 mvn spring-boot:run
 ```
@@ -430,38 +428,28 @@ The application initializes on port `8081`:
 
 ---
 
-## 🧪 Automated Security Test Suite (56 Tests)
+## 🧪 Automated Security Test Suite
 
-Run the full automated verification suite:
+The project includes automated tests for authorization boundaries, account management, file validation, document sharing, content integrity, and audit-chain tampering.
 
-```bash
-mvn test
+**Previous local baseline:** The repository's earlier Surefire reports recorded 67 tests with 0 failures, errors, or skips. Those reports predate the current Render/Supabase deployment changes, so rerun the suite against this updated source before relying on that result.
+
+Run from the repository root:
+
+```powershell
+mvn clean test package
 ```
 
-### Test Suite Execution Summary
-```
-[INFO] -------------------------------------------------------
-[INFO]  T E S T S   E X E C U T I O N   R E S U L T S
-[INFO] -------------------------------------------------------
-[INFO] Running com.trustvault.document.DocumentVisibilityIntegrationTests  [PASS]
-[INFO] Running com.trustvault.document.DocumentDownloadAuthorizationTests   [PASS]
-[INFO] Running com.trustvault.document.DocumentUploadValidationTests        [PASS]
-[INFO] Running com.trustvault.audit.AuditTamperingIntegrationTests          [PASS]
-[INFO] Running com.trustvault.audit.AuditIntegrityServiceTests              [PASS]
-[INFO] Running com.trustvault.user.UserManagementAndAuditTests              [PASS]
-[INFO] Running com.trustvault.auth.AuthenticationIntegrationTests           [PASS]
-[INFO]
-[INFO] Results: Tests run: 56, Failures: 0, Errors: 0, Skipped: 0
-[INFO] BUILD SUCCESS
-```
+The deployment adapter has received focused source-level checks, but a full Maven build and live Supabase integration test remain pending. Do not describe this hosted version as verified until those checks pass.
 
-### What the 56 Tests Prove:
-1. **Cross-Tenant Isolation:** Users cannot enumerate, discover, or download files owned by other users without an explicit grant.
-2. **Immediate Access Revocation:** Once a grant is revoked, subsequent downloads by that user are denied on the immediate next request.
-3. **Audit Tamper Detection:** Deliberately modified audit rows, deleted events, reordered records, and forged HMAC checkpoints are flagged as tampering.
-4. **Magic Byte Enforcement:** Executables and malicious scripts disguised as PDFs or PNGs are rejected before storage.
-5. **Content Integrity Verification:** Corrupted or tampered files on disk are detected via SHA-256 mismatch before serving.
-6. **Zero-Trust Administrative Scoping:** Administrators cannot inspect private documents via `/api/documents` without an explicit grant.
+### Coverage Highlights
+
+1. **Cross-User Isolation:** Users cannot enumerate, discover, or download files owned by other users without an explicit grant.
+2. **Immediate Access Revocation:** Once a grant is revoked, subsequent downloads by that user are denied on the next request.
+3. **Audit Tamper Detection:** Modified audit rows, deleted events, broken chain links, and forged HMAC checkpoints are covered by the audit tests.
+4. **Magic Byte Enforcement:** Unsupported or disguised files are rejected before storage.
+5. **Content Integrity Verification:** Stored content is checked against its SHA-256 fingerprint before serving.
+6. **Zero-Trust Administrative Scoping:** Administrators cannot inspect private documents without an explicit grant.
 
 ---
 
@@ -471,7 +459,7 @@ mvn test
 > *"Where is the authorization decision made when someone downloads a file, and what would happen if that line were removed?"*
 
 ### Exact Code Location
-The authorization decision is made in [DocumentController.java:270-285](file:///c:/TrustVault/trustvault/src/main/java/com/trustvault/document/DocumentController.java#L270-L285):
+The authorization decision is made in [DocumentController.java](src/main/java/com/trustvault/document/DocumentController.java):
 
 ```java
 // DocumentController.java (Lines 270-285)
@@ -485,12 +473,12 @@ if (!documentPermissionService.hasDownloadAccess(document, user)) {
 1. **The Method Invocation:** `documentPermissionService.hasDownloadAccess(document, user)` evaluates two conditions:
    - Does `document.getOwner().getId().equals(user.getId())`? (Is the caller the document owner?)
    - If not, is there an active grant in `TV_DOCUMENT_PERMISSIONS` with `PERMISSION_TYPE` in `('VIEW', 'EDIT')`?
-2. **The Non-Disclosing Response:** Notice that TrustVault returns `HTTP 404 NOT_FOUND` rather than `403 FORBIDDEN`. This prevents attackers from enumerating document IDs (IDOR reconnaissance).
+2. **The Non-Disclosing Response:** Notice that Docurithm returns `HTTP 404 NOT_FOUND` rather than `403 FORBIDDEN`. This prevents attackers from enumerating document IDs (IDOR reconnaissance).
 3. **The Audit Proof:** The refused attempt is immediately recorded in the HMAC audit chain with outcome `REFUSED`, capturing the attacker's user ID, IP address, document ID, and timestamp.
 4. **What happens if that check is removed?**
    - **Immediate Test Failure:** Automated test `DocumentDownloadAuthorizationTests#unauthorizedViewerCannotDownloadDocument` fails immediately in CI/CD.
    - **Security Impact:** The application would become vulnerable to IDOR — any logged-in user could download arbitrary documents by iterating over document IDs.
-   - **Compensating Controls:** Even if bypassed, the physical file on disk cannot be directly targeted via URL paths because it is stored under a server-generated UUID outside the web root (`trustvault-private-files/<UUID>.bin`).
+   - **Compensating Controls:** Even if bypassed, the physical file on disk cannot be directly targeted via URL paths because it is stored under a server-generated UUID outside the web root during local development; hosted files use the private Supabase Storage bucket and are served through the authorization-checked application.
 
 ---
 
@@ -500,21 +488,21 @@ All mandatory competition artifacts are complete and maintained in the repositor
 
 | Document | File Link | Purpose & Evaluator Checkpoints |
 |:---|:---|:---|
-| **Threat Model** | [THREATS.md](file:///c:/TrustVault/trustvault/THREATS.md) | Exhaustive adversarial threat model covering 10 attack vectors (IDOR, tampering, timing attacks, MIME spoofing, revocation race conditions), mitigations, and knowingly accepted risks. |
-| **AI Prompt & Correction Log** | [PROMPTS.md](file:///c:/TrustVault/trustvault/PROMPTS.md) | 17 dated entries recording prompts, AI outputs, identified mistakes (e.g., scoping leakage, starter deletion, test chain unseeding), and the human engineer's corrective actions. |
-| **Architecture Write-Up** | [WRITEUP.md](file:///c:/TrustVault/trustvault/WRITEUP.md) | Architectural rationale, permission model in plain English, what was built, what was deliberately omitted, and honest gap analysis. |
-| **Production Deployment Runbook** | [DEPLOYMENT.md](file:///c:/TrustVault/trustvault/DEPLOYMENT.md) | Clean clone instructions, Oracle SQL DDL schema scripts, systemd service units, and Nginx SSL reverse-proxy configurations. |
-| **5-Minute Video Presentation Script** | [DEMO_SCRIPT.md](file:///c:/TrustVault/trustvault/DEMO_SCRIPT.md) | Scene-by-scene script with timing cues demonstrating zero-trust login, upload, permission sharing, instant revocation, and audit tamper verification. |
-| **Staged Git Commits Guide** | [GIT_COMMITS.md](file:///c:/TrustVault/trustvault/GIT_COMMITS.md) | 7 conventional commit commands ready for manual execution across the project. |
-| **API Specification Matrix** | [docs/API.md](file:///c:/TrustVault/trustvault/docs/API.md) | Endpoint catalog, HTTP methods, required roles, query parameters, and response contracts. |
-| **Database Architecture & DDL** | [docs/DATABASE.md](file:///c:/TrustVault/trustvault/docs/DATABASE.md) | Complete database schema, Oracle SQL scripts, sequences, indexes, and cryptographic constraints. |
+| **Threat Model** | [THREATS.md](THREATS.md) | Exhaustive adversarial threat model covering 10 attack vectors (IDOR, tampering, timing attacks, MIME spoofing, revocation race conditions), mitigations, and knowingly accepted risks. |
+| **AI Prompt & Correction Log** | [PROMPTS.md](PROMPTS.md) | 18 dated entries recording prompts, AI outputs, identified mistakes (e.g., scoping leakage, starter deletion, test chain unseeding), and the human engineer's corrective actions. |
+| **Architecture Write-Up** | [WRITEUP.md](WRITEUP.md) | Architectural rationale, permission model in plain English, what was built, what was deliberately omitted, and honest gap analysis. |
+| **Render + Supabase Deployment Runbook** | [SUPABASE_DEPLOYMENT.md](SUPABASE_DEPLOYMENT.md) | Hosted PostgreSQL schema, private Storage setup, Render environment variables, and deployment verification steps. |
+| **5-Minute Video Presentation Script** | [DEMO_SCRIPT.md](DEMO_SCRIPT.md) | Scene-by-scene script with timing cues demonstrating zero-trust login, upload, permission sharing, instant revocation, and audit tamper verification. |
+| **Staged Git Commits Guide** | [GIT_COMMITS.md](GIT_COMMITS.md) | 7 conventional commit commands ready for manual execution across the project. |
+| **API Specification Matrix** | [docs/API.md](docs/API.md) | Endpoint catalog, HTTP methods, required roles, query parameters, and response contracts. |
+| **Database Architecture & DDL** | [docs/DATABASE.md](docs/DATABASE.md) | Complete database schema, Oracle SQL scripts, sequences, indexes, and cryptographic constraints. |
 
 ---
 
 ## 📜 Compliance & Integrity Statement
 
-TrustVault has been engineered specifically to meet and exceed all criteria of the **TrustVault Security Challenge**:
+Docurithm has been engineered specifically to meet and exceed all criteria of the **hackathon project requirements**:
 - ✅ Zero-Trust Server-Side Authorization
 - ✅ Cryptographically Verifiable HMAC-SHA256 Audit Blockchain
 - ✅ Immediate Access Revocation (0-Second Latency)
-- ✅ Validated Against 56 Automated Regression & Security Tests
+- ✅ Automated Regression and Security Tests Included (rerun after deployment changes)

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sign in to TrustVault - Secure document sharing and cryptographically auditable access management.">
-    <title>TrustVault | Sign In</title>
+    <meta name="description" content="Sign in to Docurithm - Secure document sharing and cryptographically auditable access management.">
+    <title>Docurithm | Sign In</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -253,8 +253,8 @@
 <body>
     <header class="navbar">
         <a class="brand" href="/">
-            <span class="brand-icon">T</span>
-            TrustVault
+            <span class="brand-icon">D</span>
+            Docurithm
         </a>
         <nav>
             <a href="/">Home</a>
@@ -333,44 +333,21 @@
                 Don't have an account yet? <a href="/signup.html">Create an Account</a>
             </div>
 
-            <div class="demo-accounts">
-                <div class="demo-accounts-title">
-                    <span>Demo Quick Fill</span>
-                    <span style="font-size: 10px; opacity: 0.8;">Click to autofill</span>
-                </div>
-                <div class="demo-chips">
-                    <button type="button" class="demo-chip" onclick="fillCredentials('admin@trustvault.local', 'admin123456!')">
-                        Admin
-                    </button>
-                    <button type="button" class="demo-chip" onclick="fillCredentials('owner@trustvault.local', 'owner123456!')">
-                        Owner
-                    </button>
-                    <button type="button" class="demo-chip" onclick="fillCredentials('viewer@trustvault.local', 'viewer123456!')">
-                        Viewer
-                    </button>
-                </div>
-            </div>
-
             <div class="login-footer">
-                Back to <a href="/">TrustVault Home</a>
+                Back to <a href="/">Docurithm Home</a>
             </div>
         </div>
     </main>
 
     <footer>
         <a class="brand" href="/">
-            <span class="brand-icon">T</span>
-            TrustVault
+            <span class="brand-icon">D</span>
+            Docurithm
         </a>
-        <p class="copyright">&copy; 2026 TrustVault &mdash; Secure Document Platform</p>
+        <p class="copyright">&copy; 2026 Docurithm &mdash; Secure Document Platform</p>
     </footer>
 
     <script>
-        function fillCredentials(email, pwd) {
-            document.getElementById('username').value = email;
-            document.getElementById('password').value = pwd;
-        }
-
         // Parse query params
         const params = new URLSearchParams(window.location.search);
         if (params.has('error')) {

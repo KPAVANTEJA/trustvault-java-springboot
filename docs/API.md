@@ -1,4 +1,4 @@
-# 🌐 TrustVault — API Specification & Security Access Matrix
+# 🌐 Docurithm — API Specification & Security Access Matrix
 
 <p align="center">
   <img src="https://img.shields.io/badge/Security-Spring_Security_7.1.1-6DB33F?style=for-the-badge&logo=springsecurity" alt="Spring Security"/>
@@ -151,7 +151,7 @@ flowchart LR
 ### 4. Download Document
 `GET /api/documents/{id}/download`
 - **Access:** Document Owner OR User with active `VIEW` or `EDIT` permission grant.
-- **Security Check:** Evaluated at [DocumentController.java:270-285](file:///c:/TrustVault/trustvault/src/main/java/com/trustvault/document/DocumentController.java#L270-L285).
+- **Security Check:** Evaluated at [DocumentController.java:270-285](file:///c:/Docurithm/trustvault/src/main/java/com/trustvault/document/DocumentController.java#L270-L285).
 - **Behavior:**
   - If authorized: Checks SHA-256 fingerprint on disk, logs `DOWNLOAD_SUCCESS` to audit chain, and streams binary.
   - If unauthorized: Logs `DOWNLOAD_DENIED` with client IP and returns `404 Not Found`.

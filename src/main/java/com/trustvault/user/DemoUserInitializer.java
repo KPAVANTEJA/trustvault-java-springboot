@@ -72,15 +72,15 @@ public class DemoUserInitializer implements ApplicationRunner {
         }
 
         createIfMissing(
-            values[0], "TrustVault Administrator",
+            values[0], "Docurithm Administrator",
             values[1], UserRole.ADMIN);
 
         createIfMissing(
-            values[2], "TrustVault Document Owner",
+            values[2], "Docurithm Document Owner",
             values[3], UserRole.OWNER);
 
         createIfMissing(
-            values[4], "TrustVault Viewer",
+            values[4], "Docurithm Viewer",
             values[5], UserRole.VIEWER);
     }
 

@@ -477,7 +477,7 @@ async function handleViewDocument(doc, btn) {
         }
 
         previewWindow.document.title =
-            `TrustVault Preview - ${doc.title || "Document"}`;
+            `Docurithm Preview - ${doc.title || "Document"}`;
 
         previewWindow.location.replace(objectUrl);
 
