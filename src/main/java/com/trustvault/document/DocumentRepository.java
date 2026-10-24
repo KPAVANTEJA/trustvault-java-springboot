@@ -55,6 +55,8 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Document> findByOwner_RoleAndDeletedFalseOrderByCreatedAtDesc(
     	    UserRole role
     	);
+
+    List<Document> findAllByDeletedFalseOrderByCreatedAtDesc();
     
     @Query("""
     	    SELECT d

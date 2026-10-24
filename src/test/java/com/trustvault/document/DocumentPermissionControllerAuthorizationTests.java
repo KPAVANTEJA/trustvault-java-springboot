@@ -1,6 +1,7 @@
 package com.trustvault.document;
 
 import static org.mockito.Mockito.verifyNoInteractions;
+
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,6 +18,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import org.junit.jupiter.api.BeforeEach;
+import com.trustvault.user.AppUser;
+import com.trustvault.user.AppUserRepository;
+import com.trustvault.user.UserRole;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
@@ -26,6 +32,25 @@ class DocumentPermissionControllerAuthorizationTests {
 
     @Autowired
     private MockMvc mockMvc;
+    
+    @Autowired
+    private AppUserRepository userRepository;
+    
+    @BeforeEach
+    void ensureViewerAccountExists() {
+        AppUser viewer = userRepository
+                .findByEmailIgnoreCase("viewer@example.com")
+                .orElseGet(() -> new AppUser(
+                        "viewer@example.com",
+                        "Viewer Tester",
+                        "TestPassword123!",
+                        UserRole.VIEWER));
+
+        viewer.setRole(UserRole.VIEWER);
+        viewer.setEnabled(true);
+
+        userRepository.saveAndFlush(viewer);
+    }
 
     @MockitoBean
     private DocumentPermissionService permissionService;

@@ -220,7 +220,7 @@ public class DocumentController {
 
     		if (user.getRole() == UserRole.ADMIN) {
     		    documents = documentRepository
-    		        .findByOwner_RoleAndDeletedFalseOrderByCreatedAtDesc(UserRole.ADMIN);
+    		        .findOwnedOrSharedDocuments(user.getId());
     		} else if (user.getRole() == UserRole.VIEWER) {
     		    documents = documentRepository.findSharedDocuments(user.getId());
     		} else {
@@ -229,17 +229,169 @@ public class DocumentController {
 
         return documents
             .stream()
-            .map(document -> Map.<String, Object>of(
-                "id", document.getId(),
-                "title", document.getTitle(),
-                "filename", document.getOriginalFilename(),
-                "category", document.getCategory(),
-                "sizeBytes", document.getSizeBytes(),
-                "createdAt", document.getCreatedAt().toString()
-            ))
+            .map(document -> {
+                java.util.Map<String, Object> item = new java.util.LinkedHashMap<>();
+                item.put("id", document.getId());
+                item.put("title", document.getTitle());
+                item.put("filename", document.getOriginalFilename());
+                item.put("category", document.getCategory());
+                item.put("sizeBytes", document.getSizeBytes());
+                item.put("createdAt", document.getCreatedAt().toString());
+                item.put("ownerEmail", document.getOwner().getEmail());
+                item.put("ownerName", document.getOwner().getFullName());
+                boolean isOwnerDoc = document.getOwner().getId().equals(user.getId());
+                boolean isAdmin = user.getRole() == UserRole.ADMIN;
+                item.put("isOwner", isOwnerDoc || isAdmin);
+                boolean canEdit = isOwnerDoc || isAdmin;
+                if (!canEdit) {
+                    canEdit = permissionRepository
+                            .findByDocument_IdAndUser_Id(document.getId(), user.getId())
+                            .map(p -> p.getPermissionType() == PermissionType.EDIT)
+                            .orElse(false);
+                }
+                item.put("canEdit", canEdit);
+                return item;
+            })
             .toList();
     }
     
+    
+    @GetMapping("/{id}/view")
+    @Transactional
+    public ResponseEntity<Resource> viewDocument(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        AppUser user = userRepository
+                .findByEmailIgnoreCase(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Authenticated user not found."));
+
+        Document document = documentRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Document not found."));
+
+        if (document.isDeleted()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Document not found.");
+        }
+
+        // Only the owner or a user with explicit VIEW/EDIT permission
+        // may view the document content.
+        boolean isOwner =
+                document.getOwner().getId().equals(user.getId());
+
+        if (!isOwner) {
+            DocumentPermission permission = permissionRepository
+                    .findByDocument_IdAndUser_Id(id, user.getId())
+                    .orElse(null);
+
+            if (permission == null
+                    || (permission.getPermissionType() != PermissionType.VIEW
+                    && permission.getPermissionType() != PermissionType.EDIT)) {
+
+                auditLogService.recordViewFailure(
+                        document, user, "DENIED");
+
+                throw new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Document not found.");
+            }
+        }
+
+        Path filePath = storageService.resolve(document.getStorageKey());
+
+        if (!Files.isRegularFile(filePath)
+                || !Files.isReadable(filePath)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Document file not found.");
+        }
+
+        // Verify the stored file against its recorded SHA-256 hash.
+        String expectedHash = document.getContentSha256();
+
+        if (expectedHash == null || expectedHash.isBlank()) {
+            auditLogService.recordViewFailure(
+                    document, user, "INTEGRITY_UNAVAILABLE");
+
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Document integrity verification is unavailable.");
+        }
+
+        try {
+            String actualHash = contentHashService.sha256(filePath);
+
+            if (!actualHash.equalsIgnoreCase(expectedHash)) {
+                auditLogService.recordViewFailure(
+                        document, user, "INTEGRITY_MISMATCH");
+
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Document integrity verification failed.");
+            }
+        } catch (IOException ex) {
+            auditLogService.recordViewFailure(
+                    document, user, "INTEGRITY_CHECK_ERROR");
+
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Unable to verify document integrity.");
+        }
+
+        // Render only safe, supported preview types inline.
+        String contentType = document.getContentType();
+
+        if (contentType == null || contentType.isBlank()) {
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        }
+
+        String previewType = contentType
+                .split(";", 2)[0]
+                .trim()
+                .toLowerCase(Locale.ROOT);
+
+        if (!java.util.Set.of(
+                "application/pdf",
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+                "text/plain"
+        ).contains(previewType)) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "Preview is unavailable for this file type. Please download it.");
+        }
+
+        MediaType responseType = MediaType.parseMediaType(previewType);
+
+        if ("text/plain".equals(previewType)) {
+            responseType = MediaType.parseMediaType(
+                    "text/plain;charset=UTF-8");
+        }
+
+        Resource resource = new FileSystemResource(filePath);
+
+        auditLogService.recordView(document, user);
+
+        return ResponseEntity.ok()
+                .contentType(responseType)
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .header("X-Content-Type-Options", "nosniff")
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"document-" + document.getId() + "\"")
+                .body(resource);
+    }
+    
+    
+    
+
 
 @GetMapping("/{id}/download")
 @Transactional
@@ -388,7 +540,7 @@ public ResponseEntity<Void> deleteDocument(
 }
 
 
-@PutMapping("/{id}")
+@RequestMapping(value = "/{id}", method = {RequestMethod.PUT, RequestMethod.PATCH})
 @Transactional
 public Map<String, Object> updateDocument(
         @PathVariable Long id,
@@ -489,7 +641,7 @@ public Map<String, Object> updateDocument(
 }
 
 
-@PostMapping("/{id}/content")
+@RequestMapping(value = "/{id}/content", method = {RequestMethod.POST, RequestMethod.PUT})
 @Transactional
 public Map<String, Object> replaceDocumentContent(
         @PathVariable Long id,
@@ -701,8 +853,7 @@ public List<Map<String, Object>> searchDocuments(
 
     if (user.getRole() == UserRole.ADMIN) {
         documents = documentRepository
-                .findByOwner_RoleAndDeletedFalseOrderByCreatedAtDesc(
-                        UserRole.ADMIN);
+            .findOwnedOrSharedDocuments(user.getId());
     } else if (user.getRole() == UserRole.VIEWER) {
         documents = documentRepository
                 .findSharedDocuments(user.getId());
@@ -741,6 +892,18 @@ public List<Map<String, Object>> searchDocuments(
                 result.put("ownerEmail", d.getOwner().getEmail());
                 result.put("sizeBytes", d.getSizeBytes());
                 result.put("createdAt", d.getCreatedAt());
+                boolean isOwnerDoc = d.getOwner().getId().equals(user.getId());
+                boolean isAdmin = user.getRole() == UserRole.ADMIN;
+                result.put("isOwner", isOwnerDoc || isAdmin);
+                // Check if user has EDIT permission on this document
+                boolean canEdit = isOwnerDoc || isAdmin;
+                if (!canEdit) {
+                    canEdit = permissionRepository
+                            .findByDocument_IdAndUser_Id(d.getId(), user.getId())
+                            .map(p -> p.getPermissionType() == PermissionType.EDIT)
+                            .orElse(false);
+                }
+                result.put("canEdit", canEdit);
                 return result;
             })
             .toList();

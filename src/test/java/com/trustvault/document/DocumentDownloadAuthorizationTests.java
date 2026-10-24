@@ -19,6 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -76,6 +79,8 @@ class DocumentDownloadAuthorizationTests {
         AppUser owner = mock(AppUser.class);
         Document document = mock(Document.class);
 
+        activeUser(viewer, UserRole.VIEWER);
+
         when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
             .thenReturn(Optional.of(viewer));
 
@@ -111,6 +116,8 @@ void viewerWithViewPermissionCanDownloadDocument() throws Exception {
 
     try {
         Files.writeString(tempFile, "test document content");
+
+        activeUser(viewer, UserRole.VIEWER);
 
         when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
             .thenReturn(Optional.of(viewer));
@@ -161,6 +168,8 @@ void viewerCannotEditAnotherUsersDocument() throws Exception {
     when(document.getOwner()).thenReturn(owner);
     when(document.isDeleted()).thenReturn(false);
 
+    activeUser(viewer, UserRole.VIEWER);
+
     when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
         .thenReturn(Optional.of(viewer));
 
@@ -198,6 +207,8 @@ void ownerCannotDeleteAnotherUsersDocument() throws Exception {
 
     AppUser requester = mock(AppUser.class);
     when(requester.getId()).thenReturn(2L);
+
+    activeUser(requester, UserRole.OWNER);
 
     when(userRepository.findByEmailIgnoreCase("owner2@example.com"))
         .thenReturn(Optional.of(requester));
@@ -251,6 +262,8 @@ void viewerCannotReplaceAnotherUsersDocumentContent()
     when(document.getOwner()).thenReturn(owner);
     when(document.isDeleted()).thenReturn(false);
 
+    activeUser(viewer, UserRole.VIEWER);
+
     when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
         .thenReturn(Optional.of(viewer));
 
@@ -302,6 +315,8 @@ void viewerWithViewPermissionCannotEditDocument() throws Exception {
 
     DocumentPermission permission = mock(DocumentPermission.class);
     when(permission.getPermissionType()).thenReturn(PermissionType.VIEW);
+
+    activeUser(viewer, UserRole.VIEWER);
 
     when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
         .thenReturn(Optional.of(viewer));
@@ -356,6 +371,8 @@ void userWithEditPermissionCanUpdateDocumentMetadata()
     DocumentPermission permission = mock(DocumentPermission.class);
     when(permission.getPermissionType()).thenReturn(PermissionType.EDIT);
 
+    activeUser(editor, UserRole.VIEWER);
+
     when(userRepository.findByEmailIgnoreCase("editor@example.com"))
         .thenReturn(Optional.of(editor));
 
@@ -407,6 +424,8 @@ void viewerWithViewPermissionCannotReplaceDocumentContent()
 
     DocumentPermission permission = mock(DocumentPermission.class);
     when(permission.getPermissionType()).thenReturn(PermissionType.VIEW);
+
+    activeUser(viewer, UserRole.VIEWER);
 
     when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
         .thenReturn(Optional.of(viewer));
@@ -463,6 +482,8 @@ void userWithEditPermissionCanReplaceDocumentContent()
 
     DocumentPermission permission = mock(DocumentPermission.class);
     when(permission.getPermissionType()).thenReturn(PermissionType.EDIT);
+
+    activeUser(editor, UserRole.VIEWER);
 
     when(userRepository.findByEmailIgnoreCase("editor@example.com"))
         .thenReturn(Optional.of(editor));
@@ -526,6 +547,13 @@ void viewerCannotUploadDocuments() throws Exception {
         "viewer upload attempt".getBytes(
             java.nio.charset.StandardCharsets.UTF_8)
     );
+    
+    AppUser viewer = mock(AppUser.class);
+
+    activeUser(viewer, UserRole.VIEWER);
+
+    when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
+        .thenReturn(Optional.of(viewer));
 
     mockMvc.perform(multipart("/api/documents")
             .file(file)
@@ -552,6 +580,8 @@ void viewerListingAndSearchUseOnlySharedDocuments()
     AppUser viewer = mock(AppUser.class);
     when(viewer.getId()).thenReturn(2L);
     when(viewer.getRole()).thenReturn(UserRole.VIEWER);
+
+    activeUser(viewer, UserRole.VIEWER);
 
     when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
         .thenReturn(Optional.of(viewer));
@@ -605,6 +635,8 @@ void revokedPermissionImmediatelyPreventsNextDownload()
 
     DocumentPermission permission = mock(DocumentPermission.class);
     when(permission.getPermissionType()).thenReturn(PermissionType.VIEW);
+
+    activeUser(viewer, UserRole.VIEWER);
 
     when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
         .thenReturn(Optional.of(viewer));
@@ -663,6 +695,8 @@ void downloadRejectsFileWhoseContentsHaveChanged() throws Exception {
         // The stored file contains altered content.
         Files.writeString(tempFile, "Modified document content");
 
+        activeUser(viewer, UserRole.VIEWER);
+
         when(userRepository.findByEmailIgnoreCase("viewer@example.com"))
             .thenReturn(Optional.of(viewer));
         when(viewer.getId()).thenReturn(2L);
@@ -696,6 +730,68 @@ void downloadRejectsFileWhoseContentsHaveChanged() throws Exception {
     } finally {
         Files.deleteIfExists(tempFile);
     }
+}
+
+@Test
+@WithMockUser(username = "owner@example.com", roles = "OWNER")
+void uploadStoresSha256Fingerprint() throws Exception {
+    AppUser owner = mock(AppUser.class);
+
+    activeUser(owner, UserRole.OWNER);
+
+    when(userRepository.findByEmailIgnoreCase("owner@example.com"))
+        .thenReturn(Optional.of(owner));
+    when(owner.getEmail()).thenReturn("owner@example.com");
+
+    byte[] content = "replacement content"
+        .getBytes(StandardCharsets.UTF_8);
+
+    MockMultipartFile upload = new MockMultipartFile(
+        "file",
+        "fingerprint.txt",
+        "text/plain",
+        content
+    );
+
+    when(storageService.store(any(MultipartFile.class)))
+        .thenReturn("123e4567-e89b-12d3-a456-426614174000");
+
+    when(documentRepository.saveAndFlush(any(Document.class)))
+        .thenAnswer(invocation -> {
+            Document saved = invocation.getArgument(0);
+
+            // Simulate the ID and creation timestamp assigned by JPA.
+            ReflectionTestUtils.setField(saved, "id", 101L);
+            saved.beforeInsert();
+
+            return saved;
+        });
+
+    mockMvc.perform(multipart("/api/documents")
+            .file(upload)
+            .param("title", "Fingerprint Test")
+            .param("category", "Tests")
+            .with(csrf()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.title").value("Fingerprint Test"));
+
+    ArgumentCaptor<Document> captor =
+        ArgumentCaptor.forClass(Document.class);
+
+    verify(documentRepository).saveAndFlush(captor.capture());
+
+    assertEquals(
+        "a3be89a03562b5dc60bc2e5af28ff981cf287d60ee02ad1afebca7cbafc81189",
+        captor.getValue().getContentSha256()
+    );
+
+    verify(auditLogService).recordUpload(captor.getValue(), owner);
+}
+
+private AppUser activeUser(AppUser user, UserRole role) {
+    when(user.isEnabled()).thenReturn(true);
+    when(user.getRole()).thenReturn(role);
+    return user;
 }
 
 }

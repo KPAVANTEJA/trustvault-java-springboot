@@ -52,6 +52,7 @@ public class Document {
     private LocalDateTime createdAt;
     
     @Column(name = "IS_DELETED", nullable = false)
+    @Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
     private boolean deleted = false;
     
     @Column(name = "CATEGORY", nullable = false, length = 100)

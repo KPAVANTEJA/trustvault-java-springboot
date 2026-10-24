@@ -67,7 +67,15 @@ class DocumentPermissionAuthorizationTests {
                 exception.getStatusCode().value());
 
         verify(auditLogService).recordPermissionChangeFailure(
-                document, requester, "PERMISSION_GRANT", "DENIED");
+                eq(document),
+                any(AppUser.class),
+                isNull(),
+                eq("recipient@example.com"),
+                isNull(),
+                eq("VIEW"),
+                eq("PERMISSION_GRANT"),
+                eq("DENIED")
+        );
 
         verify(permissionRepository, never())
                 .save(any(DocumentPermission.class));
@@ -104,7 +112,15 @@ class DocumentPermissionAuthorizationTests {
                 exception.getStatusCode().value());
 
         verify(auditLogService).recordPermissionChangeFailure(
-                document, requester, "PERMISSION_REVOKE", "DENIED");
+                eq(document),
+                any(AppUser.class),
+                eq(3L),
+                isNull(),
+                isNull(),
+                isNull(),
+                eq("PERMISSION_REVOKE"),
+                eq("DENIED")
+        );
 
         verify(permissionRepository, never())
                 .delete(any(DocumentPermission.class));
@@ -121,6 +137,7 @@ class DocumentPermissionAuthorizationTests {
 
         AppUser recipient = mock(AppUser.class);
         when(recipient.getId()).thenReturn(2L);
+        when(recipient.getEmail()).thenReturn("viewer@example.com");
         
 
         Document document = mock(Document.class);
@@ -151,7 +168,15 @@ class DocumentPermissionAuthorizationTests {
         assertEquals(PermissionType.VIEW, saved.getPermissionType());
 
         verify(auditLogService).recordPermissionChange(
-                document, owner, "PERMISSION_GRANT", "SUCCESS");
+        	    document,
+        	    owner,
+        	    2L,
+        	    "viewer@example.com",
+        	    null,
+        	    "VIEW",
+        	    "PERMISSION_GRANT",
+        	    "SUCCESS"
+        	);
     }
     
     @Test
@@ -164,7 +189,13 @@ class DocumentPermissionAuthorizationTests {
         when(document.getOwner()).thenReturn(owner);
         when(document.isDeleted()).thenReturn(false);
 
+        AppUser recipient = mock(AppUser.class);
+        when(recipient.getId()).thenReturn(2L);
+        when(recipient.getEmail()).thenReturn("viewer@example.com");
+
         DocumentPermission permission = mock(DocumentPermission.class);
+        when(permission.getUser()).thenReturn(recipient);
+        when(permission.getPermissionType()).thenReturn(PermissionType.VIEW);
 
         when(userRepository.findByEmailIgnoreCase("owner@example.com"))
                 .thenReturn(Optional.of(owner));
@@ -182,6 +213,14 @@ class DocumentPermissionAuthorizationTests {
         verify(permissionRepository).flush();
 
         verify(auditLogService).recordPermissionChange(
-                document, owner, "PERMISSION_REVOKE", "SUCCESS");
+                document,
+                owner,
+                2L,
+                "viewer@example.com",
+                "VIEW",
+                null,
+                "PERMISSION_REVOKE",
+                "SUCCESS"
+        );
     }
 }
