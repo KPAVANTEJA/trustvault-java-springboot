@@ -9,7 +9,7 @@
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
 ```
 - [Architectural Security Model](#-architectural-security-model)
@@ -21,7 +21,7 @@
 
 ---
 
-## 🛡️ Architectural Security Model
+## Architectural Security Model
 
 All endpoints are guarded by **server-side Spring Security authorization filters** and explicit permission evaluations:
 
@@ -45,7 +45,7 @@ flowchart LR
 
 ---
 
-## 🔐 Authentication & Session Management
+## Authentication & Session Management
 
 ### 1. User Sign In
 `POST /login`
@@ -81,7 +81,7 @@ flowchart LR
 
 ---
 
-## 📁 Document Management Endpoints
+## Document Management Endpoints
 
 ### 1. List Documents
 `GET /api/documents`
@@ -193,7 +193,7 @@ flowchart LR
 
 ---
 
-## 👥 Document Permissions & Instant Revocation Endpoints
+## Document Permissions & Instant Revocation Endpoints
 
 Base Path: `/api/documents/{documentId}/permissions`
 Guarded by `@PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")`.
@@ -240,7 +240,7 @@ Guarded by `@PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")`.
 
 ---
 
-## 🏛️ Administrative Governance & Audit Verification Endpoints
+## Administrative Governance & Audit Verification Endpoints
 
 Guarded by `@PreAuthorize("hasRole('ADMIN')")`.
 
@@ -363,7 +363,7 @@ between 1 and 100.
 
 ---
 
-## ⚠️ Error Handling & Security Contracts
+## Error Handling & Security Contracts
 
 | HTTP Status | Trigger Condition | Security Rationale |
 |:---:|:---|:---|

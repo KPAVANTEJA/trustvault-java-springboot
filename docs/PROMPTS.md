@@ -15,9 +15,9 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Corrective action:** Configure Oracle connection settings through environment variables, confirm the Oracle service name, and verify startup against the intended schema.
 
-**Verification status:** The application was subsequently reported to start successfully against the clean test schema using the Oracle `XE` service. The original `MYDATABASE` schema was preserved. This startup verification does not by itself establish that a production datasource is configured.
+**Verification status:** The application was subsequently reported to start successfully against the clean test schema using the Oracle `XE` service. The original `DATABASE` schema was preserved. This startup verification does not by itself establish that a production datasource is configured.
 
-**Evidence commit:** Pending — add the actual commit link after reviewing Git history.
+**Evidence commit:** [36080b8](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/36080b87f6dc965f341837c98da8ce3aa408e9b2)
 
 ## Entry 2 — 2026-10-19 — Role-Based Authorization
 
@@ -31,9 +31,9 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** Five role-authorization tests were reported passing for the endpoint boundaries they cover. These tests are distinct from tests of document-specific grants and revocations.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [f2446d2](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/f2446d24e20facd535a8ebca61f164f304dda89c)
 
-## Entry 3 — 2026-10-19 — Audit Integrity
+## Entry 3 — 2026-10-21 — Audit Integrity
 
 **Prompt summary:** Design an audit trail that can detect tampering.
 
@@ -45,7 +45,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** Audit verification and multiple tampering-test scenarios were subsequently reported passing. A development-chain re-baseline is documented in Entry 12: it retained audit rows but cleared the historical hash links, so it cannot establish the integrity of those records before the new baseline. Production key management and the production database have not been independently verified.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [8ce8553](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/8ce85532e68bba466c4eb5102e2ce8cb9528be32)
 
 ## Entry 4 — 2026-10-19 — Document Upload and Private Storage
 
@@ -59,7 +59,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** Upload functionality was manually exercised. SHA-256 fingerprinting of uploaded files was added later and is documented in Entry 15. Automated validation coverage is limited to the tests actually present in the suite.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [5d66a2f](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/5d66a2f969a6a22bd2691d3cff54a97de9b87a00)
 
 ## Entry 5 — 2026-10-19 — Document Listing and Access Boundaries
 
@@ -73,7 +73,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** The role-specific code was updated and the project owner reported the relevant fixes and tests complete. Dedicated cross-user listing tests in the final repository are the evidence needed to prove every role boundary.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [8510074](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/85100743fae609c7f544e856cb5119f9ed560319)
 
 ## Entry 6 — 2026-10-20 — Per-Document Sharing and Revocation
 
@@ -87,9 +87,9 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** Manual end-to-end testing was reported to confirm that a `VIEW` grant allowed a recipient to download a document and that revocation prevented the recipient's next download. Permission endpoints and associated audit events were also exercised manually.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [5d3fb13](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/5d3fb13798804bb4fac3848bd1d29f38e154d2c8)
 
-## Entry 7 — 2026-10-20 — Authorized and Unauthorized Document Downloads
+## Entry 7 — 2026-10-21 — Authorized and Unauthorized Document Downloads
 
 **Prompt summary:** Implement protected document downloads and test both authorized and denied access.
 
@@ -101,7 +101,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** The project owner reported that the unauthorized-viewer and authorized-viewer download tests passed. The denied-download test also verifies that a denial event is recorded. Tests later added for file-hash mismatch and permission revocation are documented in Entry 15.
 
-**Evidence commit:** The denied-download test was reportedly committed as `test(security): verify unauthorized document downloads are denied`. Commit URL/hash pending; verify it from actual Git history. Verify the authorized-download test commit separately.
+**Evidence commit:** [5fc5258](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/5fc52585a8ae31103c57810a2394ffb66a03b7fe)
 
 ## Entry 8 — 2026-10-20 — Audit Logging and Administrative Review
 
@@ -115,7 +115,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** Successful and denied download events, permission-change auditing, administrator access checks, and invalid pagination handling were reported tested. Resilience to audit-write failures and every failure path is bounded by the test coverage in the repository.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [e95ec3c](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/e95ec3c4d3b377ef6fab62f3d33c8789c3fb4017)
 
 ## Entry 9 — 2026-10-20 — Soft Deletion and Audit Preservation
 
@@ -129,7 +129,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** The soft-delete implementation and schema change were developed. The project owner reports project testing complete; the final test suite should demonstrate deletion authorization, repeated-deletion behavior, storage cleanup, and audit preservation.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [a9b6cce](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/a9b6cce29374cea0c6efea5a97244f3d63be6081)
 
 ## Entry 10 — 2026-10-20 — Dashboard Integration
 
@@ -143,7 +143,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** Manual UI testing of upload, listing/search, download, sharing, and revocation was reported. The document-preview action was added later and is recorded in Entry 21. Frontend behavior is distinct from backend authorization testing.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [fdb632c](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/fdb632c04aa60f7f1d6205261fae71347c2d065f)
 
 ## Entry 11 — 2026-10-21 — Role-Specific Document Search
 
@@ -157,7 +157,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** The updated search code was saved, and the project owner reported the project fixes and tests complete. A final regression test should cover unshared, shared, owned, and deleted records for each applicable role.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [c136f96](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/c136f96ce5b4f4fa5b4c46609922747d2146aaff)
 
 ## Entry 12 — 2026-10-21 — Audit Verification Failure and Development Re-baseline
 
@@ -171,9 +171,9 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** Post-recovery chain initialization and later integrity verification were reported successful. This does not restore the lost historical hash-link evidence. Production deployment must start with an explicit, reviewed migration/baseline plan; do not repeat the local re-baseline casually against production data.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [43b15e9](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/43b15e9e9c56f0b30ac1bec26ed5189d5cef527b)
 
-## Entry 13 — 2026-10-21 — Automated Audit Tampering Tests
+## Entry 13 — 2026-10-22 — Automated Audit Tampering Tests
 
 **Prompt summary:** Add automated tests for modified audit records, deleted events, broken chain links, and altered checkpoints.
 
@@ -185,7 +185,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** The project owner reported that the tampering tests passed. The project notes describe four implemented scenarios; broader adversarial testing and deployment verification remain separate concerns.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [e6466ca](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/e6466ca9b1082fe853edc8f13fb356457db12b77)
 
 ## Entry 14 — 2026-10-22 — Expanding Authorization and Audit Test Coverage
 
@@ -199,7 +199,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** Several authorization and audit test groups were reported passing. The project owner reports the remaining test sections verified. Add exact final test output/evidence when assembling the final commit history; do not infer a final test total from earlier, smaller test runs.
 
-**Evidence commit:** Pending.
+**Evidence commit:** [57ff181](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/57ff1817aceb963c5a64745bdc9367d96aeba594)
 
 ## Entry 15 — 2026-10-22 — SHA-256 Document Content Integrity
 
@@ -213,9 +213,9 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Integrity limitation:** Backfilling hashes creates a baseline from the files' current contents; it does not prove historical integrity. SHA-256 comparison does not provide malware scanning or protect against an attacker able to change both the file and its trusted database fingerprint.
 
-**Evidence commit:** Pending — record the actual commit hash or link after committing.
+**Evidence commit:** [b8e9252](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/b8e925269bc848ad14e2f22795b38b13c7bb48c5)
 
-## Entry 16 — 2026-10-23 — Correcting Admin Visibility Without Listing the Entire Vault
+## Entry 16 — 2026-10-22 — Correcting Admin Visibility Without Listing the Entire Vault
 
 **Prompt summary:** Review administrator document visibility after an explicitly shared document did not appear in the document workspace.
 
@@ -227,9 +227,9 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** The project owner reported all fixes complete. The controller code inspected during development also derived `isOwner` and `canEdit` using `isOwnerDoc || isAdmin`. If this remains the current behavior, it provides an administrator capability override for UI edit controls; confirm that the backend's metadata-update, replace, and delete rules match the intended policy before deployment. Listing visibility and content access are separate decisions.
 
-**Evidence commit:** Pending — add the actual corrective commit link.
+**Evidence commit:** [8e182f6](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/8e182f6cb860f95bacb4db286ea03a4be70a2fd7)
 
-## Entry 17 — 2026-10-23 — Resolving Modular Spring Boot 4 Test Dependencies
+## Entry 17 — 2026-10-24 — Resolving Modular Spring Boot 4 Test Dependencies
 
 **Prompt summary:** Fix test compilation errors related to Spring Boot test starters in `pom.xml`.
 
@@ -241,9 +241,9 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** `mvn test-compile` was reported successful with zero compilation errors. A later complete test run is documented in Entry 18.
 
-**Evidence commit:** Described as `fix(build): restore Spring Boot 4 modular test starters in pom.xml`. Commit URL/hash pending.
+**Evidence commit:** [33554b7](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/33554b788b9142c9322f3da9ad5ef835f7595066)
 
-## Entry 18 — 2026-10-23 — Administrative Audit-Chain Verification Endpoint
+## Entry 18 — 2026-10-24 — Administrative Audit-Chain Verification Endpoint
 
 **Prompt summary:** Expose HMAC-SHA256 audit integrity verification through an administrator-only HTTP endpoint and test it.
 
@@ -255,7 +255,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification status:** All nine tests in `UserManagementAndAuditTests` were reported passing. The complete test suite at that checkpoint reported 56 tests passed and zero failures. This is a historical test count, not necessarily the count of the final suite.
 
-**Evidence commit:** Described as `feat(audit): expose audit chain integrity endpoint and test suite`. Commit URL/hash pending.
+**Evidence commit:** [9d45ef9](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/9d45ef93e3a232e44434190746610bbb3341b382)
 
 ## Entry 19 — 2026-10-24 — Live Account and Role Validation
 
@@ -271,7 +271,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Verification limitation:** The check happens on the next authenticated request and does not retroactively cancel a response already being processed. It also adds database work to authenticated requests. Production session behavior has not been independently verified.
 
-**Evidence commit:** Pending — changes were reported as local and not yet committed/pushed at that checkpoint.
+**Evidence commit:** [9d45ef9](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/9d45ef93e3a232e44434190746610bbb3341b382)
 
 ## Entry 20 — 2026-10-24 — Permission Audit Metadata and HMAC Protection
 
@@ -289,7 +289,7 @@ The log distinguishes proposed, implemented, manually tested, and automated-test
 
 **Deployment limitation:** The production database schema and production deployment have not been independently verified.
 
-**Evidence commit:** Pending; changes were reported local and not committed/pushed at that checkpoint.
+**Evidence commit:** [2dc958e](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/2dc958e0c18b2f8e7695b8d9da6455c7ca0fea2a)
 
 ## Entry 21 — 2026-10-24 — In-Browser Document Preview and Storage Recovery
 
@@ -309,7 +309,7 @@ The admin list and search branches were aligned to `findOwnedOrSharedDocuments(u
 
 **Policy note:** Controller response fields seen during development derived `isOwner` and `canEdit` using `isOwnerDoc || isAdmin`. If still present, that exposes edit controls to an admin for any document in their list, including one shared with `VIEW` only. Confirm that backend metadata-update, replace, and delete authorization matches the intended role/permission policy before deployment. Listing visibility and content access are separate decisions.
 
-**Evidence commit:** Pending — add the real commit link after reviewing history.
+**Evidence commit:** [2dc958e](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/2dc958e0c18b2f8e7695b8d9da6455c7ca0fea2a)
 
 ## Entry 22 — 2026-10-24 — Role Selection During Public Signup
 
@@ -321,15 +321,7 @@ The admin list and search branches were aligned to `findOwnedOrSharedDocuments(u
 
 **Verification status:** Source inspection confirmed `String role`, `requestedRole`, the `OWNER`/`VIEWER` allowlist, `selectedRole`, and use of `selectedRole` in the constructor. The project owner confirmed the role-selection work and reports the project tests complete. Add the final Maven output and end-to-end signup checks (Owner, Viewer, and direct API attempt with `ADMIN`) to the evidence record if not already captured elsewhere.
 
-**Evidence commit:** Pending — add the actual commit link after reviewing history.
-
-## Final Status at Handoff
-
-- The project owner reports all project sections and tests verified and considers the implementation complete.
-- The Oracle development/test schema and stored-file recovery work described above were performed without intentionally dropping `MYDATABASE` or deleting existing audit rows.
-- The local development audit chain was re-baselined as documented in Entry 12. Older hash-link evidence from before that baseline is not recoverable from the current chain alone.
-- Development verification is not the same as production deployment verification. Production credentials, environment variables, storage persistence and backup, schema migration, HMAC key management, TLS, session configuration, and operational monitoring must be checked against the actual deployment environment.
-- **Commits and push:** No commit hash or GitHub URL is fabricated in this file. Add evidence links from the actual commit history after the relevant changes are committed and pushed.
+**Evidence commit:** [2dc958e](https://github.com/KPAVANTEJA/trustvault-java-springboot/commit/2dc958e0c18b2f8e7695b8d9da6455c7ca0fea2a)
 
 ## Logging Rules
 

@@ -2,7 +2,7 @@
 
 This guide deploys the hosted demo using **Render (Spring Boot web service)**, **Supabase PostgreSQL (metadata, users, permissions, audit history)**, and a **private Supabase Storage bucket (document bytes)**.
 
-The existing local Oracle `MYDATABASE` remains separate and untouched. The hosted demo starts with a new empty Supabase database; no Oracle data or uploaded local documents are copied automatically.
+The existing local Oracle `DATABASE` remains separate and untouched. The hosted demo starts with a new empty Supabase database; no Oracle data or uploaded local documents are copied automatically.
 
 ## 1. Finish Supabase setup
 

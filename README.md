@@ -1,4 +1,6 @@
-# 🛡️ Docurithm — Secure Document Governance with Verifiable Audit Trails
+# Docurithm - Secure Document Governance with Verifiable Audit Trails
+
+**Docurithm is a secure document management system built with Spring Boot that provides role-based access control, secure document storage, instant permission revocation, and tamper-evident audit logging using HMAC-SHA256.**
 
 <p align="center">
   <img src="https://img.shields.io/badge/Security-Zero--Trust_Architecture-00C853?style=for-the-badge&logo=shield" alt="Zero Trust Security"/>
@@ -11,9 +13,16 @@
   <img src="https://img.shields.io/badge/Frontend-Responsive_SPA_(HTML5/CSS3/JS)-E34F26?style=for-the-badge&logo=javascript" alt="Frontend"/>
 </p>
 
+
+## 🌐 Live Website
+
+**Live Demo:** [https://docurithm.onrender.com](https://docurithm.onrender.com)
+
+> **Note:** The website is hosted on Render's free service, so it may take a little time to load when accessed after a period of inactivity. Please wait a moment for the server to start. Once the application is running, subsequent requests should load faster.
+
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
 - [The Situation \& The Mission](#-the-situation--the-mission)
 - [The Three Non-Negotiables](#-the-three-non-negotiables)
@@ -31,12 +40,14 @@
 - [Hosted Demo Architecture (Render + Supabase)](#-hosted-demo-architecture-render--supabase)
 - [Quickstart Guide (Local \& Production)](#-quickstart-guide-local--production)
 - [Automated Security Test Suite](#-automated-security-test-suite)
-- [Interview Defense: The Non-Negotiable Authorization Point](#-interview-defense-the-non-negotiable-authorization-point)
 - [Project Deliverables \& Hand-In Artifacts](#-project-deliverables--hand-in-artifacts)
+- [Demo Video](#demo-video)
+- [License](#license)
+- [Compliance & Integrity Statement](#compliance--integrity-statement)
 
 ---
 
-## 🏢 The Situation & The Mission
+## The Situation & The Mission
 
 Every enterprise shares confidential documents: salary letters, customer contracts, trade drawings, and regulatory filings. In practice, two catastrophic failures occur routinely:
 
@@ -76,7 +87,7 @@ Docurithm is a zero-trust document security platform where:
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 Docurithm is structured in clear security boundaries, strictly isolating client presentation from sensitive storage:
 
@@ -122,7 +133,7 @@ graph TB
 
 ---
 
-## 🔄 Project Flow Architecture (Detailed Workflows)
+## Project Flow Architecture (Detailed Workflows)
 
 ### 1. Document Ingestion & Cryptographic Storage Flow
 
@@ -275,7 +286,7 @@ graph LR
 
 ---
 
-## 🗄️ Database Schema Architecture
+## Database Schema Architecture
 
 ### Entity-Relationship Diagram (ERD)
 
@@ -352,7 +363,7 @@ erDiagram
 
 ---
 
-## 👥 Role-Based Access Control (RBAC) Matrix
+## Role-Based Access Control (RBAC) Matrix
 
 Docurithm enforces a **Zero-Trust Model**: an account role does not confer blanket access to documents.
 
@@ -374,17 +385,17 @@ Docurithm enforces a **Zero-Trust Model**: an account role does not confer blank
 
 ---
 
-## 🔑 Demo Seed Accounts
+## Demo Seed Accounts
 
 The application creates the initial Admin, Owner, and Viewer accounts only when all six `TRUSTVAULT_*` account environment variables are configured. Choose unique passwords of at least 12 characters in the deployment dashboard; never reuse example credentials or commit credentials to source control. The public sign-in page does not expose prefilled demo passwords.
 
 ---
 
-## ☁️ Hosted Demo Architecture (Render + Supabase)
+## Hosted Demo Architecture (Render + Supabase)
 
 The `prod` profile is prepared for a fresh Supabase PostgreSQL database and the private `docurithm-private` Storage bucket. Run [`supabase/schema.sql`](supabase/schema.sql) in the new Supabase project's SQL Editor before deploying. Configure `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `TRUSTVAULT_AUDIT_HMAC_KEY` in Render. Configure all six `TRUSTVAULT_ADMIN_*`, `TRUSTVAULT_OWNER_*`, and `TRUSTVAULT_VIEWER_*` values if you want the initial demo accounts created. Never expose the Supabase secret key in browser JavaScript or commit it to Git. This hosted database is separate from the existing Oracle `MYDATABASE`; no Oracle data is migrated automatically.
 
-## 🚀 Quickstart Guide (Local & Production)
+## Quickstart Guide (Local & Production)
 
 ### System Requirements
 - **Java Development Kit (JDK):** Version 17+
@@ -398,7 +409,7 @@ The `prod` profile is prepared for a fresh Supabase PostgreSQL database and the 
 export TRUSTVAULT_AUDIT_HMAC_KEY="<your-generated-base64-secret>"
 
 # Oracle Database Connection (Omit if evaluating with H2 profile)
-export ORACLE_DB_URL="jdbc:oracle:thin:@//localhost:1521/XEPDB1"
+export ORACLE_DB_URL="jdbc:oracle:thin:@//localhost:1521/YOUR_SERVICE_NAME"
 export ORACLE_DB_USERNAME="trustvault_user"
 export ORACLE_DB_PASSWORD="<your-local-oracle-password>"
 
@@ -428,7 +439,7 @@ The application initializes on port `8081`:
 
 ---
 
-## 🧪 Automated Security Test Suite
+## Automated Security Test Suite
 
 The project includes automated tests for authorization boundaries, account management, file validation, document sharing, content integrity, and audit-chain tampering.
 
@@ -453,56 +464,43 @@ The deployment adapter has received focused source-level checks, but a full Mave
 
 ---
 
-## 🎤 Interview Defense: The Non-Negotiable Authorization Point
-
-> **Judge's Question:**
-> *"Where is the authorization decision made when someone downloads a file, and what would happen if that line were removed?"*
-
-### Exact Code Location
-The authorization decision is made in [DocumentController.java](src/main/java/com/trustvault/document/DocumentController.java):
-
-```java
-// DocumentController.java (Lines 270-285)
-if (!documentPermissionService.hasDownloadAccess(document, user)) {
-    auditEventService.recordRefusedDownloadAttempt(document, user, request);
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-}
-```
-
-### Deep Dive Defense
-1. **The Method Invocation:** `documentPermissionService.hasDownloadAccess(document, user)` evaluates two conditions:
-   - Does `document.getOwner().getId().equals(user.getId())`? (Is the caller the document owner?)
-   - If not, is there an active grant in `TV_DOCUMENT_PERMISSIONS` with `PERMISSION_TYPE` in `('VIEW', 'EDIT')`?
-2. **The Non-Disclosing Response:** Notice that Docurithm returns `HTTP 404 NOT_FOUND` rather than `403 FORBIDDEN`. This prevents attackers from enumerating document IDs (IDOR reconnaissance).
-3. **The Audit Proof:** The refused attempt is immediately recorded in the HMAC audit chain with outcome `REFUSED`, capturing the attacker's user ID, IP address, document ID, and timestamp.
-4. **What happens if that check is removed?**
-   - **Immediate Test Failure:** Automated test `DocumentDownloadAuthorizationTests#unauthorizedViewerCannotDownloadDocument` fails immediately in CI/CD.
-   - **Security Impact:** The application would become vulnerable to IDOR — any logged-in user could download arbitrary documents by iterating over document IDs.
-   - **Compensating Controls:** Even if bypassed, the physical file on disk cannot be directly targeted via URL paths because it is stored under a server-generated UUID outside the web root during local development; hosted files use the private Supabase Storage bucket and are served through the authorization-checked application.
-
----
-
-## 📚 Project Deliverables & Hand-In Artifacts
+## Project Deliverables & Hand-In Artifacts
 
 All mandatory competition artifacts are complete and maintained in the repository:
 
 | Document | File Link | Purpose & Evaluator Checkpoints |
 |:---|:---|:---|
 | **Threat Model** | [THREATS.md](THREATS.md) | Exhaustive adversarial threat model covering 10 attack vectors (IDOR, tampering, timing attacks, MIME spoofing, revocation race conditions), mitigations, and knowingly accepted risks. |
-| **AI Prompt & Correction Log** | [PROMPTS.md](PROMPTS.md) | 18 dated entries recording prompts, AI outputs, identified mistakes (e.g., scoping leakage, starter deletion, test chain unseeding), and the human engineer's corrective actions. |
-| **Architecture Write-Up** | [WRITEUP.md](WRITEUP.md) | Architectural rationale, permission model in plain English, what was built, what was deliberately omitted, and honest gap analysis. |
+| **AI Prompt & Correction Log** | [PROMPTS.md](docs/PROMPTS.md) | 22 dated entries recording prompts, AI outputs, identified mistakes (e.g., scoping leakage, starter deletion, test chain unseeding), and the human engineer's corrective actions. |
 | **Render + Supabase Deployment Runbook** | [SUPABASE_DEPLOYMENT.md](SUPABASE_DEPLOYMENT.md) | Hosted PostgreSQL schema, private Storage setup, Render environment variables, and deployment verification steps. |
-| **5-Minute Video Presentation Script** | [DEMO_SCRIPT.md](DEMO_SCRIPT.md) | Scene-by-scene script with timing cues demonstrating zero-trust login, upload, permission sharing, instant revocation, and audit tamper verification. |
-| **Staged Git Commits Guide** | [GIT_COMMITS.md](GIT_COMMITS.md) | 7 conventional commit commands ready for manual execution across the project. |
 | **API Specification Matrix** | [docs/API.md](docs/API.md) | Endpoint catalog, HTTP methods, required roles, query parameters, and response contracts. |
 | **Database Architecture & DDL** | [docs/DATABASE.md](docs/DATABASE.md) | Complete database schema, Oracle SQL scripts, sequences, indexes, and cryptographic constraints. |
 
 ---
 
-## 📜 Compliance & Integrity Statement
+## Demo Video
+
+Watch the Docurithm demonstration to see document upload, access control, permission handling, and audit integrity verification in action.
+
+**Demo Video:** [Watch the Docurithm Demo](docs/Docurithm-Demo-Video.mp4)
+
+---
+
+## License
+
+This project is licensed under the terms described in the [`LICENSE`](LICENSE) file.
+
+---
+
+## Compliance & Integrity Statement
 
 Docurithm has been engineered specifically to meet and exceed all criteria of the **hackathon project requirements**:
 - ✅ Zero-Trust Server-Side Authorization
 - ✅ Cryptographically Verifiable HMAC-SHA256 Audit Blockchain
 - ✅ Immediate Access Revocation (0-Second Latency)
-- ✅ Automated Regression and Security Tests Included (rerun after deployment changes)
+- ✅ Automated Regression and Security Tests Included
+
+---
+
+**Note on Documentation:** I used AI tools to help prepare and organize the project documentation. Although I made efforts to keep it aligned with the actual implementation, some descriptions may not perfectly reflect the final state of the project. I apologize for any inaccuracies or references to features that may not be fully implemented. The actual implementation and verified behavior should be considered the source of truth.
+

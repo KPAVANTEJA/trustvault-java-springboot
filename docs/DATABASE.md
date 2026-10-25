@@ -1,4 +1,4 @@
-# 🗄️ Docurithm — Database Architecture & Schema Specification
+# Docurithm — Database Architecture & Schema Specification
 
 <p align="center">
   <img src="https://img.shields.io/badge/Database-Oracle_Database_19c%2F21c%2F23ai-F80000?style=for-the-badge&logo=oracle&logoColor=white" alt="Oracle Database"/>
@@ -9,7 +9,7 @@
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 ```
 - [Overview \& Security Architecture](#-overview--security-architecture)
 - [Entity-Relationship Diagram (ERD)](#-entity-relationship-diagram-erd)
@@ -29,7 +29,7 @@
 
 ---
 
-## 🛡️ Overview & Security Architecture
+## Overview & Security Architecture
 
 The Docurithm database stores **metadata, authorization grants, and cryptographic audit proofs**.
 It is engineered according to core security principles:
@@ -40,7 +40,7 @@ It is engineered according to core security principles:
 
 ---
 
-## 📊 Entity-Relationship Diagram (ERD)
+## Entity-Relationship Diagram (ERD)
 
 ```mermaid
 erDiagram
@@ -109,7 +109,7 @@ erDiagram
 
 ---
 
-## 📖 Complete Data Dictionary
+## Complete Data Dictionary
 
 ### 1. `TV_USERS` (User Identity & Persona)
 Stores authenticated user credentials and baseline roles.
@@ -205,7 +205,7 @@ Singleton table maintaining the tip of the audit blockchain.
 
 ---
 
-## ⛓️ Cryptographic Audit Chaining Architecture
+## Cryptographic Audit Chaining Architecture
 
 ```mermaid
 flowchart TD
@@ -236,7 +236,7 @@ If an attacker modifies any historical row $i$ in `TV_AUDIT_LOGS`:
 
 ---
 
-## 🛠️ Production Oracle SQL DDL Scripts
+## Production Oracle SQL DDL Scripts
 
 Run the following scripts in your Oracle Database instance (`sqlplus` or Oracle SQL Developer) to create the schema from scratch:
 
@@ -368,7 +368,7 @@ COMMIT;
 
 ---
 
-## 🔍 Verification Queries
+## Verification Queries
 
 ### 1. Inspect Recent Audit Events with Integrity Signatures
 ```sql
@@ -424,6 +424,6 @@ ALTER TABLE TV_AUDIT_LOGS
 
 ## Supabase PostgreSQL schema for the hosted demo
 
-The Render production profile uses a **new, separate Supabase PostgreSQL database**. It does not connect to, copy, or modify the local Oracle `MYDATABASE` schema. For a fresh Supabase project, open its SQL Editor and run [`../supabase/schema.sql`](../supabase/schema.sql) exactly once. That script creates Docurithm's application tables, sequences, indexes, constraints, and the singleton audit-chain-head row. It must not be run against Oracle. After the script has run, the production profile uses `spring.jpa.hibernate.ddl-auto=validate` to check the schema rather than modifying it at application startup.
+The Render production profile uses a **new, separate Supabase PostgreSQL database**. It does not connect to, copy, or modify the local Oracle `DATABASE` schema. For a fresh Supabase project, open its SQL Editor and run [`../supabase/schema.sql`](../supabase/schema.sql) exactly once. That script creates Docurithm's application tables, sequences, indexes, constraints, and the singleton audit-chain-head row. It must not be run against Oracle. After the script has run, the production profile uses `spring.jpa.hibernate.ddl-auto=validate` to check the schema rather than modifying it at application startup.
 
 Hosted private document bytes are stored in the private `docurithm-private` Supabase Storage bucket through the Storage API. The SQL schema stores only each object's random UUID key, metadata, owner/permissions, and SHA-256 fingerprint. Do not manually insert or delete object metadata in Supabase's internal `storage` schema.
