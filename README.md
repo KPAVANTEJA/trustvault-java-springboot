@@ -482,9 +482,11 @@ All mandatory competition artifacts are complete and maintained in the repositor
 
 Watch the Docurithm demonstration to see document upload, access control, permission handling, and audit integrity verification in action.
 
-**Demo Video:** [Watch the Docurithm Demo](docs/Docurithm-Demo-Video.mp4)
+<video src="docs/Docurithm-Demo-Video.mp4" controls="controls" style="max-width: 100%;">
+  Your browser does not support the video tag.
+</video>
 
----
+**Demo Video:** [Watch the Docurithm Demo](docs/Docurithm-Demo-Video.mp4)
 
 ## License
 
